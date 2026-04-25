@@ -6,7 +6,12 @@ Jira 命令行工具，用于查询和管理 Jira 任务。
 
 - 创建 Jira 任务
 - 查询任务详情
+- 列出项目任务
 - 搜索任务（支持 JQL）
+- 更新任务状态
+- 添加评论
+- 指派任务
+- 查看项目列表
 - 支持 TypeScript
 - 命令行友好
 - 支持全局安装
@@ -104,6 +109,28 @@ jira issue create -p PROJECT -s "Bug修复" -t Bug
 pnpm run dev issue create -p PROJECT -s "任务标题"
 ```
 
+### 列出任务
+
+```bash
+# 列出项目中的任务（全局安装）
+jira issue list -p PROJECT
+
+# 按状态筛选
+jira issue list -p PROJECT -s "In Progress"
+
+# 按指派人筛选
+jira issue list -p PROJECT -a username
+
+# 显示所有任务（包括已完成）
+jira issue list -p PROJECT --all
+
+# 限制结果数
+jira issue list -p PROJECT -l 20
+
+# 本地开发
+pnpm run dev issue list -p PROJECT
+```
+
 ### 搜索任务（JQL）
 
 ```bash
@@ -116,6 +143,47 @@ jira issue search -j "project = PROJECT" -m 20
 
 # 本地开发
 pnpm run dev issue search -j "project = PROJECT AND status = 待办"
+```
+
+### 更新任务状态
+
+```bash
+# 全局安装后
+jira issue update-status PROJECT-123 -s "In Progress"
+jira issue update-status PROJECT-123 -s "Done"
+
+# 本地开发
+pnpm run dev issue update-status PROJECT-123 -s "In Progress"
+```
+
+### 添加评论
+
+```bash
+# 全局安装后
+jira issue add-comment PROJECT-123 -c "这是评论内容"
+
+# 本地开发
+pnpm run dev issue add-comment PROJECT-123 -c "这是评论内容"
+```
+
+### 指派任务
+
+```bash
+# 全局安装后
+jira issue assign PROJECT-123 -a username
+
+# 本地开发
+pnpm run dev issue assign PROJECT-123 -a username
+```
+
+### 查看项目列表
+
+```bash
+# 全局安装后
+jira projects
+
+# 本地开发
+pnpm run dev projects
 ```
 
 ## 示例
@@ -192,6 +260,18 @@ jira issue search -j "project = PROJECT AND status = 待办"
 - `-a, --assignee <assignee>` - 指派人（可选）
 - `-l, --labels <labels>` - 标签，逗号分隔（可选）
 
+### `jira issue list`
+
+列出项目中的任务。
+
+选项：
+- `-p, --project <project>` - 项目 Key（必需）
+- `-s, --status <status>` - 按状态筛选（可选）
+- `-a, --assignee <assignee>` - 按指派人筛选（可选）
+- `-r, --reporter <reporter>` - 按报告人筛选（可选）
+- `--all` - 显示所有任务，包括已完成（可选，默认：false）
+- `-l, --limit <limit>` - 最大结果数（可选，默认：50）
+
 ### `jira issue search`
 
 搜索任务。
@@ -199,6 +279,40 @@ jira issue search -j "project = PROJECT AND status = 待办"
 选项：
 - `-j, --jql <jql>` - JQL 查询语句（必需）
 - `-m, --max-results <number>` - 最大结果数（可选，默认：50）
+
+### `jira issue update-status <issueKey>`
+
+更新任务状态。
+
+参数：
+- `<issueKey>` - 任务 Key（必需），例如：PROJECT-123
+
+选项：
+- `-s, --status <status>` - 目标状态（必需）
+
+### `jira issue add-comment <issueKey>`
+
+添加评论到任务。
+
+参数：
+- `<issueKey>` - 任务 Key（必需），例如：PROJECT-123
+
+选项：
+- `-c, --comment <comment>` - 评论内容（必需）
+
+### `jira issue assign <issueKey>`
+
+指派任务给用户。
+
+参数：
+- `<issueKey>` - 任务 Key（必需），例如：PROJECT-123
+
+选项：
+- `-a, --assignee <assignee>` - 指派人用户名（必需）
+
+### `jira projects`
+
+列出所有可用的项目。
 
 ## 开发
 

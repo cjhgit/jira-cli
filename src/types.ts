@@ -121,3 +121,38 @@ export interface CreateIssueResponse {
   key: string;
   self: string;
 }
+
+export interface JiraTransition {
+  id: string;
+  name: string;
+  to: JiraStatus;
+}
+
+export interface JiraTransitionsResponse {
+  transitions: JiraTransition[];
+}
+
+export interface JiraComment {
+  self: string;
+  id: string;
+  author: JiraUser;
+  body: string;
+  created: string;
+  updated: string;
+}
+
+export interface JiraSearchResult {
+  expand: string;
+  startAt: number;
+  maxResults: number;
+  total: number;
+  issues: JiraIssue[];
+}
+
+export interface ListIssuesOptions {
+  status?: string;
+  assignee?: string;
+  reporter?: string;
+  all?: boolean;
+  limit?: number;
+}

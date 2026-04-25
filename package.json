@@ -1,7 +1,7 @@
 {
   "name": "jira-cli",
-  "version": "1.0.0",
-  "description": "A command-line tool for managing Jira issues - create, query, and search tasks with ease",
+  "version": "1.1.0",
+  "description": "A command-line tool for managing Jira issues - create, query, list, update status, add comments, assign, and search tasks with ease",
   "main": "dist/index.js",
   "bin": {
     "jira": "dist/index.js"

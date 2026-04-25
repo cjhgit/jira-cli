@@ -1,5 +1,15 @@
 import axios, { AxiosInstance } from 'axios';
-import { JiraConfig, JiraIssue, CreateIssueOptions, CreateIssueResponse } from './types';
+import { 
+  JiraConfig, 
+  JiraIssue, 
+  CreateIssueOptions, 
+  CreateIssueResponse,
+  JiraTransitionsResponse,
+  JiraComment,
+  JiraSearchResult,
+  ListIssuesOptions,
+  JiraProject
+} from './types';
 
 export class JiraClient {
   private client: AxiosInstance;
@@ -41,13 +51,158 @@ export class JiraClient {
 
   async searchIssues(jql: string, maxResults: number = 50): Promise<JiraIssue[]> {
     try {
-      const response = await this.client.get('/search', {
+      const response = await this.client.get<JiraSearchResult>('/search', {
         params: {
           jql,
           maxResults,
         },
       });
       return response.data.issues;
+    } catch (error: any) {
+      if (error.response) {
+        throw new Error(
+          `Jira API 错误: ${error.response.status} - ${error.response.statusText}`
+        );
+      } else if (error.request) {
+        throw new Error('无法连接到 Jira 服务器');
+      } else {
+        throw new Error(`请求失败: ${error.message}`);
+      }
+    }
+  }
+
+  async listIssues(projectKey: string, options: ListIssuesOptions = {}): Promise<JiraIssue[]> {
+    try {
+      let jql = `project = "${projectKey}"`;
+
+      if (options.status) {
+        jql += ` AND status = "${options.status}"`;
+      }
+
+      if (options.assignee) {
+        jql += ` AND assignee = "${options.assignee}"`;
+      }
+
+      if (options.reporter) {
+        jql += ` AND reporter = "${options.reporter}"`;
+      }
+
+      // 默认只显示未完成的任务
+      if (!options.all) {
+        jql += ' AND resolution = Unresolved';
+      }
+
+      jql += ' ORDER BY updated DESC';
+
+      const maxResults = options.limit || 50;
+
+      const response = await this.client.get<JiraSearchResult>('/search', {
+        params: {
+          jql,
+          maxResults,
+        },
+      });
+
+      return response.data.issues;
+    } catch (error: any) {
+      if (error.response) {
+        throw new Error(
+          `Jira API 错误: ${error.response.status} - ${error.response.statusText}`
+        );
+      } else if (error.request) {
+        throw new Error('无法连接到 Jira 服务器');
+      } else {
+        throw new Error(`请求失败: ${error.message}`);
+      }
+    }
+  }
+
+  async updateStatus(issueKey: string, targetStatus: string): Promise<void> {
+    try {
+      // 1. 获取可用的转换
+      const response = await this.client.get<JiraTransitionsResponse>(`/issue/${issueKey}/transitions`);
+      
+      // 2. 查找目标状态对应的转换
+      const transition = response.data.transitions.find(t =>
+        t.to.name.toLowerCase() === targetStatus.toLowerCase() ||
+        t.name.toLowerCase() === targetStatus.toLowerCase()
+      );
+
+      if (!transition) {
+        const availableTransitions = response.data.transitions
+          .map(t => `"${t.to.name}"`)
+          .join(', ');
+        const transitionDetails = response.data.transitions
+          .map(t => `  - "${t.to.name}" (转换名称: ${t.name})`)
+          .join('\n');
+        throw new Error(
+          `找不到到 "${targetStatus}" 状态的转换。\n\n` +
+          `可用的目标状态: ${availableTransitions}\n\n` +
+          `使用方法: jira issue update-status ${issueKey} -s "状态名称"\n\n` +
+          `详细信息:\n${transitionDetails}`
+        );
+      }
+
+      // 3. 执行转换
+      await this.client.post(`/issue/${issueKey}/transitions`, {
+        transition: { id: transition.id }
+      });
+    } catch (error: any) {
+      if (error.response) {
+        throw new Error(
+          `Jira API 错误: ${error.response.status} - ${error.response.statusText}`
+        );
+      } else if (error.request) {
+        throw new Error('无法连接到 Jira 服务器');
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  async addComment(issueKey: string, commentBody: string): Promise<JiraComment> {
+    try {
+      const response = await this.client.post<JiraComment>(`/issue/${issueKey}/comment`, {
+        body: commentBody
+      });
+      return response.data;
+    } catch (error: any) {
+      if (error.response) {
+        throw new Error(
+          `Jira API 错误: ${error.response.status} - ${error.response.statusText}`
+        );
+      } else if (error.request) {
+        throw new Error('无法连接到 Jira 服务器');
+      } else {
+        throw new Error(`请求失败: ${error.message}`);
+      }
+    }
+  }
+
+  async assignIssue(issueKey: string, assignee: string): Promise<void> {
+    try {
+      await this.client.put(`/issue/${issueKey}`, {
+        fields: {
+          assignee: { name: assignee }
+        }
+      });
+    } catch (error: any) {
+      if (error.response) {
+        throw new Error(
+          `Jira API 错误: ${error.response.status} - ${error.response.statusText}`
+        );
+      } else if (error.request) {
+        throw new Error('无法连接到 Jira 服务器');
+      } else {
+        throw new Error(`请求失败: ${error.message}`);
+      }
+    }
+  }
+
+  async listProjects(): Promise<JiraProject[]> {
+    try {
+      const response = await this.client.get<JiraProject[]>('/project');
+      return response.data;
     } catch (error: any) {
       if (error.response) {
         throw new Error(

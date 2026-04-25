@@ -116,4 +116,140 @@ issueCommand
     }
   });
 
+issueCommand
+  .command('list')
+  .description('列出项目中的任务')
+  .requiredOption('-p, --project <project>', '项目 Key')
+  .option('-s, --status <status>', '按状态筛选')
+  .option('-a, --assignee <assignee>', '按指派人筛选')
+  .option('-r, --reporter <reporter>', '按报告人筛选')
+  .option('--all', '显示所有任务（包括已完成）', false)
+  .option('-l, --limit <limit>', '最大结果数', '50')
+  .action(async (options) => {
+    try {
+      const config = getJiraConfig();
+      const jiraClient = new JiraClient(config);
+      
+      console.log(`正在查询项目 ${options.project} 的任务...`);
+      const issues = await jiraClient.listIssues(options.project, {
+        status: options.status,
+        assignee: options.assignee,
+        reporter: options.reporter,
+        all: options.all,
+        limit: parseInt(options.limit),
+      });
+      
+      if (issues.length === 0) {
+        console.log('📋 没有找到匹配的任务');
+        return;
+      }
+
+      console.log(`\n📋 找到 ${issues.length} 个任务\n`);
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('Key          状态            优先级        摘要');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+      issues.forEach(issue => {
+        const key = issue.key.padEnd(12);
+        const status = (issue.fields.status?.name || 'N/A').padEnd(14);
+        const priority = (issue.fields.priority?.name || 'N/A').padEnd(12);
+        const summary = truncate(issue.fields.summary || '', 40);
+        console.log(`${key} ${status} ${priority} ${summary}`);
+      });
+
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    } catch (error: any) {
+      console.error(`错误: ${error.message}`);
+      process.exit(1);
+    }
+  });
+
+issueCommand
+  .command('update-status <issueKey>')
+  .description('更新任务状态')
+  .requiredOption('-s, --status <status>', '目标状态')
+  .action(async (issueKey: string, options) => {
+    try {
+      const config = getJiraConfig();
+      const jiraClient = new JiraClient(config);
+      
+      console.log(`正在更新任务 ${issueKey} 的状态...`);
+      await jiraClient.updateStatus(issueKey, options.status);
+      console.log(`✅ 任务 ${issueKey} 状态已更新为: ${options.status}`);
+    } catch (error: any) {
+      console.error(`错误: ${error.message}`);
+      process.exit(1);
+    }
+  });
+
+issueCommand
+  .command('add-comment <issueKey>')
+  .description('添加评论到任务')
+  .requiredOption('-c, --comment <comment>', '评论内容')
+  .action(async (issueKey: string, options) => {
+    try {
+      const config = getJiraConfig();
+      const jiraClient = new JiraClient(config);
+      
+      console.log(`正在添加评论到 ${issueKey}...`);
+      const comment = await jiraClient.addComment(issueKey, options.comment);
+      console.log(`✅ 评论已添加到 ${issueKey}`);
+      console.log(`   评论ID: ${comment.id}`);
+    } catch (error: any) {
+      console.error(`错误: ${error.message}`);
+      process.exit(1);
+    }
+  });
+
+issueCommand
+  .command('assign <issueKey>')
+  .description('指派任务给用户')
+  .requiredOption('-a, --assignee <assignee>', '指派人用户名')
+  .action(async (issueKey: string, options) => {
+    try {
+      const config = getJiraConfig();
+      const jiraClient = new JiraClient(config);
+      
+      console.log(`正在指派任务 ${issueKey}...`);
+      await jiraClient.assignIssue(issueKey, options.assignee);
+      console.log(`✅ 任务 ${issueKey} 已指派给: ${options.assignee}`);
+    } catch (error: any) {
+      console.error(`错误: ${error.message}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('projects')
+  .description('列出所有项目')
+  .action(async () => {
+    try {
+      const config = getJiraConfig();
+      const jiraClient = new JiraClient(config);
+      
+      console.log('正在获取项目列表...');
+      const projects = await jiraClient.listProjects();
+      
+      console.log('\n📁 可用的项目列表:\n');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('Key          名称');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+      projects.forEach(project => {
+        const key = project.key.padEnd(12);
+        console.log(`${key} ${project.name}`);
+      });
+
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    } catch (error: any) {
+      console.error(`错误: ${error.message}`);
+      process.exit(1);
+    }
+  });
+
+function truncate(str: string, maxLength: number): string {
+  if (!str) return '';
+  return str.length > maxLength ? str.substring(0, maxLength - 3) + '...' : str;
+}
+
 program.parse();

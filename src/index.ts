@@ -237,10 +237,28 @@ issueCommand
     try {
       const config = getJiraConfig();
       const jiraClient = new JiraClient(config);
-      
+
       console.log(`正在指派任务 ${issueKey}...`);
       await jiraClient.assignIssue(issueKey, options.assignee);
       console.log(`✅ 任务 ${issueKey} 已指派给: ${options.assignee}`);
+    } catch (error: any) {
+      console.error(`错误: ${error.message}`);
+      process.exit(1);
+    }
+  });
+
+issueCommand
+  .command('edit-description <issueKey>')
+  .description('修改任务描述')
+  .requiredOption('-d, --description <description>', '新的描述内容')
+  .action(async (issueKey: string, options) => {
+    try {
+      const config = getJiraConfig();
+      const jiraClient = new JiraClient(config);
+
+      console.log(`正在修改任务 ${issueKey} 的描述...`);
+      await jiraClient.updateDescription(issueKey, options.description);
+      console.log(`✅ 任务 ${issueKey} 的描述已更新`);
     } catch (error: any) {
       console.error(`错误: ${error.message}`);
       process.exit(1);

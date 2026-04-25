@@ -65,6 +65,7 @@ export JIRA_BASE_URL=https://your-jira-domain.com
 | `jira issue list` | `-p` 项目 | `-s` 状态, `-a` 指派人, `-r` 报告人, `--all`, `-l` 数量(默认50) | 列出任务 |
 | `jira issue search` | `-j` JQL | `-m` 最大结果(默认50) | JQL 搜索 |
 | `jira issue update-status <key>` | `-s` 目标状态 | — | 更新状态 |
+| `jira issue update-description <key>` | `-d` 新描述 | — | 更新描述 |
 | `jira issue add-comment <key>` | `-c` 评论内容 | — | 添加评论 |
 | `jira issue assign <key>` | `-a` 用户名 | — | 指派任务 |
 | `jira issue delete <key>` | — | `-y` 跳过确认 | 删除任务 |
@@ -87,6 +88,9 @@ jira issue search -j "assignee = currentUser() AND status = Open"
 
 # 更新状态
 jira issue update-status PROJ-123 -s "Done"
+
+# 更新描述
+jira issue update-description PROJ-123 -d "更新后的详细描述信息"
 
 # 添加评论
 jira issue add-comment PROJ-123 -c "已修复，请验证"

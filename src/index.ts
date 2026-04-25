@@ -248,8 +248,6 @@ issueCommand
   });
 
 issueCommand
-<<<<<<< HEAD
-=======
   .command('edit <issueKey>')
   .description('修改任务（标题、描述、优先级、标签、任务类型）')
   .option('-s, --summary <summary>', '任务标题')
@@ -314,7 +312,7 @@ issueCommand
   });
 
 issueCommand
->>>>>>> worktree-edit-comment
+
   .command('delete-comment <issueKey>')
   .description('删除任务评论')
   .requiredOption('-c, --comment-id <commentId>', '评论 ID')

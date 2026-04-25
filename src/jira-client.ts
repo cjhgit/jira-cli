@@ -236,8 +236,6 @@ export class JiraClient {
     }
   }
 
-<<<<<<< HEAD
-=======
   async updateIssue(issueKey: string, fields: Record<string, any>): Promise<void> {
     try {
       await this.client.put(`/issue/${issueKey}`, { fields });
@@ -276,7 +274,6 @@ export class JiraClient {
     }
   }
 
->>>>>>> worktree-edit-comment
   async deleteComment(issueKey: string, commentId: string): Promise<void> {
     try {
       await this.client.delete(`/issue/${issueKey}/comment/${commentId}`);

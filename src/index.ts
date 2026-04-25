@@ -3,6 +3,7 @@
 import { Command } from 'commander';
 import { JiraClient } from './jira-client';
 import { JiraConfig } from './types';
+import * as readline from 'readline';
 
 function getJiraConfig(): JiraConfig {
   const account = process.env.JIRA_ACCOUNT;
@@ -22,6 +23,21 @@ function getJiraConfig(): JiraConfig {
     accountInfo: { account, password },
     serviceInfo: { baseUrl },
   };
+}
+
+function waitForConfirmation(message: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
+
+    rl.question(message, (answer) => {
+      rl.close();
+      const normalized = answer.trim().toLowerCase();
+      resolve(normalized === '' || normalized === 'y' || normalized === 'yes');
+    });
+  });
 }
 
 const program = new Command();
@@ -213,6 +229,41 @@ issueCommand
       console.log(`正在指派任务 ${issueKey}...`);
       await jiraClient.assignIssue(issueKey, options.assignee);
       console.log(`✅ 任务 ${issueKey} 已指派给: ${options.assignee}`);
+    } catch (error: any) {
+      console.error(`错误: ${error.message}`);
+      process.exit(1);
+    }
+  });
+
+issueCommand
+  .command('delete <issueKey>')
+  .description('删除任务')
+  .option('-y, --yes', '跳过确认，直接删除', false)
+  .action(async (issueKey: string, options) => {
+    try {
+      const config = getJiraConfig();
+      const jiraClient = new JiraClient(config);
+      
+      console.log(`正在获取任务 ${issueKey} 的信息...`);
+      const issue = await jiraClient.getIssue(issueKey);
+      console.log(`\n即将删除任务:`);
+      console.log(`  Key: ${issue.key}`);
+      console.log(`  标题: ${issue.fields.summary}`);
+      console.log(`  状态: ${issue.fields.status.name}`);
+      console.log(`\n⚠️  警告: 删除任务是不可逆的操作！`);
+      
+      // 如果使用了 -y 参数，直接删除
+      if (!options.yes) {
+        const confirmed = await waitForConfirmation('\n确认删除？(按回车确认，Ctrl+C 取消): ');
+        if (!confirmed) {
+          console.log('已取消删除');
+          return;
+        }
+      }
+      
+      console.log(`\n正在删除任务 ${issueKey}...`);
+      await jiraClient.deleteIssue(issueKey);
+      console.log(`✅ 任务 ${issueKey} 已成功删除`);
     } catch (error: any) {
       console.error(`错误: ${error.message}`);
       process.exit(1);

@@ -73,6 +73,16 @@ jira issue search -j "project = PROJECT AND status = 待办"
 - 支持复杂的查询条件
 - 支持限制结果数 (`-m, --max-results`)
 
+### 9. 删除任务 (issue delete)
+```bash
+jira issue delete PROJECT-123
+jira issue delete PROJECT-123 -y
+```
+- 删除指定的任务
+- 默认显示任务信息并等待回车确认
+- 使用 `-y` 参数跳过确认直接删除
+- ⚠️ 警告：删除操作不可逆
+
 ## 参考实现来源
 
 功能实现参考了 `.tmp/jira-task/index.js` 文件，该文件包含了完整的 Node.js 原生实现。
@@ -89,6 +99,7 @@ jira issue search -j "project = PROJECT AND status = 待办"
 - `POST /rest/api/2/issue/{issueKey}/transitions` - 执行状态转换
 - `POST /rest/api/2/issue/{issueKey}/comment` - 添加评论
 - `PUT /rest/api/2/issue/{issueKey}` - 更新任务（用于指派）
+- `DELETE /rest/api/2/issue/{issueKey}` - 删除任务
 
 ### 类型定义
 
@@ -130,6 +141,9 @@ jira issue update-status MYPROJ-123 -s "Done"
 
 # 9. 查看已完成的任务
 jira issue list -p MYPROJ -s "Done" --all
+
+# 10. 删除任务（如果需要）
+jira issue delete MYPROJ-456 -y
 ```
 
 ## 注意事项

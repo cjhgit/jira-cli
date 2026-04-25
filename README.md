@@ -11,6 +11,7 @@ Jira 命令行工具，用于查询和管理 Jira 任务。
 - 更新任务状态
 - 添加评论
 - 指派任务
+- 删除任务
 - 查看项目列表
 - 支持 TypeScript
 - 命令行友好
@@ -176,6 +177,21 @@ jira issue assign PROJECT-123 -a username
 pnpm run dev issue assign PROJECT-123 -a username
 ```
 
+### 删除任务
+
+```bash
+# 交互式删除（显示信息后等待回车确认）
+jira issue delete PROJECT-123
+
+# 跳过确认直接删除
+jira issue delete PROJECT-123 -y
+
+# 本地开发
+pnpm run dev issue delete PROJECT-123
+```
+
+⚠️ **警告**：删除任务是不可逆的操作！默认会显示任务信息并等待你按回车确认，使用 `-y` 参数可以跳过确认直接删除。
+
 ### 查看项目列表
 
 ```bash
@@ -309,6 +325,18 @@ jira issue search -j "project = PROJECT AND status = 待办"
 
 选项：
 - `-a, --assignee <assignee>` - 指派人用户名（必需）
+
+### `jira issue delete <issueKey>`
+
+删除任务。
+
+参数：
+- `<issueKey>` - 任务 Key（必需），例如：PROJECT-123
+
+选项：
+- `-y, --yes` - 跳过确认，直接删除（可选，默认：false）
+
+⚠️ **警告**：删除操作不可逆！默认会显示任务信息并等待回车确认，使用 `-y` 参数可以跳过确认直接删除。
 
 ### `jira projects`
 

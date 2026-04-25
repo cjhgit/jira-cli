@@ -90,12 +90,15 @@ issueCommand
   .option('--priority <priority>', '优先级')
   .option('-a, --assignee <assignee>', '指派人')
   .option('-l, --labels <labels>', '标签（逗号分隔）')
+  .option('--parent <parent>', '父任务 Key（用于创建子任务）')
   .action(async (options) => {
     try {
       const config = getJiraConfig();
       const jiraClient = new JiraClient(config);
       
-      console.log('正在创建任务...');
+      const isSubtask = !!options.parent;
+      console.log(isSubtask ? '正在创建子任务...' : '正在创建任务...');
+      
       const result = await jiraClient.createIssue(
         options.project,
         options.summary,
@@ -105,12 +108,16 @@ issueCommand
           priority: options.priority,
           assignee: options.assignee,
           labels: options.labels,
+          parent: options.parent,
         }
       );
 
-      console.log('✅ 任务创建成功！');
+      console.log(isSubtask ? '✅ 子任务创建成功！' : '✅ 任务创建成功！');
       console.log(`   Key: ${result.key}`);
       console.log(`   ID: ${result.id}`);
+      if (isSubtask) {
+        console.log(`   父任务: ${options.parent}`);
+      }
       console.log(`   链接: ${config.serviceInfo.baseUrl}/browse/${result.key}`);
     } catch (error: any) {
       console.error(`错误: ${error.message}`);

@@ -114,6 +114,7 @@ export interface CreateIssueOptions {
   priority?: string;
   assignee?: string;
   labels?: string;
+  parent?: string;
 }
 
 export interface CreateIssueResponse {

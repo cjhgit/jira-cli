@@ -363,6 +363,26 @@ export class JiraClient {
     options: CreateIssueOptions = {}
   ): Promise<CreateIssueResponse> {
     try {
+      // 验证：如果指定了父任务，必须使用子任务类型
+      if (options.parent) {
+        const issueType = options.issueType || 'Task';
+        const isSubtaskType = issueType.toLowerCase().includes('sub');
+        
+        if (!isSubtaskType) {
+          throw new Error(
+            `创建子任务时必须指定子任务类型！\n\n` +
+            `当前任务类型: ${issueType}\n` +
+            `父任务: ${options.parent}\n\n` +
+            `请使用 -t 参数指定子任务类型，例如：\n` +
+            `  -t Sub-task\n` +
+            `  -t Subtask\n` +
+            `  -t 子任务\n\n` +
+            `完整示例：\n` +
+            `  jira issue create -p ${projectKey} -s "${summary}" --parent ${options.parent} -t Sub-task`
+          );
+        }
+      }
+
       const issueData: any = {
         fields: {
           project: { key: projectKey },
@@ -371,6 +391,11 @@ export class JiraClient {
           issuetype: { name: options.issueType || 'Task' },
         },
       };
+
+      // 添加父任务（用于创建子任务）
+      if (options.parent) {
+        issueData.fields.parent = { key: options.parent };
+      }
 
       // 添加优先级
       if (options.priority) {
@@ -425,6 +450,14 @@ export class JiraClient {
     
     if (issue.fields.parent) {
       lines.push(`父任务: ${issue.fields.parent.key} - ${issue.fields.parent.fields.summary}`);
+    }
+    
+    if (issue.fields.subtasks && issue.fields.subtasks.length > 0) {
+      lines.push(`子任务 (${issue.fields.subtasks.length}):`);
+      issue.fields.subtasks.forEach((subtask: any) => {
+        const status = subtask.fields.status.name;
+        lines.push(`  - ${subtask.key}: ${subtask.fields.summary} [${status}]`);
+      });
     }
     
     if (issue.fields.description) {

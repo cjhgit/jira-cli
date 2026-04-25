@@ -7,8 +7,23 @@
 pnpm install
 ```
 
-### 2. 配置环境变量
-创建 `.env` 文件：
+### 2. 配置 Jira 连接信息
+
+#### 方法一：使用配置命令（推荐）
+```bash
+jira config set account your-username
+jira config set password your-password
+jira config set baseUrl https://your-jira-domain.com
+```
+
+#### 方法二：设置环境变量
+```bash
+export JIRA_ACCOUNT=your-username
+export JIRA_PASSWORD=your-password
+export JIRA_BASE_URL=https://your-jira-domain.com
+```
+
+#### 方法三：创建 .env 文件（仅开发模式）
 ```bash
 JIRA_ACCOUNT=your-username
 JIRA_PASSWORD=your-password

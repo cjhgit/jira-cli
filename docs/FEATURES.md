@@ -83,6 +83,21 @@ jira issue delete PROJECT-123 -y
 - 使用 `-y` 参数跳过确认直接删除
 - ⚠️ 警告：删除操作不可逆
 
+### 10. 配置管理 (config)
+```bash
+jira config set account your-username
+jira config set password your-password
+jira config set baseUrl https://your-jira-domain.com
+jira config get
+jira config get account
+```
+- 通过命令行设置 Jira 连接信息
+- 支持设置账号（account）、密码（password）、服务器地址（baseUrl）
+- 配置保存在 `~/.jira-easy-cli/config.json`
+- 支持查看所有配置或单个配置项
+- 密码在显示时会被隐藏为 `******`
+- 优先级：环境变量 > 配置文件
+
 ## 参考实现来源
 
 功能实现参考了 `.tmp/jira-task/index.js` 文件，该文件包含了完整的 Node.js 原生实现。
@@ -148,10 +163,21 @@ jira issue delete MYPROJ-456 -y
 
 ## 注意事项
 
-1. 所有命令都需要配置环境变量：
+1. 所有命令都需要配置 Jira 连接信息，支持三种方式：
+   
+   **方式一：命令配置（推荐）**
+   ```bash
+   jira config set account your-username
+   jira config set password your-password
+   jira config set baseUrl https://your-jira-domain.com
+   ```
+   
+   **方式二：环境变量**
    - `JIRA_ACCOUNT` - Jira 用户名
    - `JIRA_PASSWORD` - Jira 密码
    - `JIRA_BASE_URL` - Jira 服务器地址
+   
+   **方式三：.env 文件（仅开发模式）**
 
 2. 状态转换的可用性取决于 Jira 工作流配置
 

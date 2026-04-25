@@ -4,8 +4,9 @@ import { Command } from 'commander';
 import { JiraClient } from './jira-client';
 import { JiraConfig } from './types';
 import * as readline from 'readline';
-import { readFileSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
+import { homedir } from 'os';
 
 function getVersion(): string {
   try {
@@ -17,17 +18,67 @@ function getVersion(): string {
   }
 }
 
+interface ConfigFile {
+  account?: string;
+  password?: string;
+  baseUrl?: string;
+}
+
+function getConfigDir(): string {
+  return join(homedir(), '.jira-easy-cli');
+}
+
+function getConfigPath(): string {
+  return join(getConfigDir(), 'config.json');
+}
+
+function readConfigFile(): ConfigFile {
+  try {
+    const configPath = getConfigPath();
+    if (existsSync(configPath)) {
+      const content = readFileSync(configPath, 'utf-8');
+      return JSON.parse(content);
+    }
+  } catch (error) {
+    // 配置文件不存在或读取失败，返回空对象
+  }
+  return {};
+}
+
+function writeConfigFile(config: ConfigFile): void {
+  const configDir = getConfigDir();
+  if (!existsSync(configDir)) {
+    mkdirSync(configDir, { recursive: true });
+  }
+  const configPath = getConfigPath();
+  writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
+}
+
 function getJiraConfig(): JiraConfig {
-  const account = process.env.JIRA_ACCOUNT;
-  const password = process.env.JIRA_PASSWORD;
-  const baseUrl = process.env.JIRA_BASE_URL;
+  // 优先从环境变量读取
+  let account = process.env.JIRA_ACCOUNT;
+  let password = process.env.JIRA_PASSWORD;
+  let baseUrl = process.env.JIRA_BASE_URL;
+
+  // 如果环境变量不存在，从配置文件读取
+  if (!account || !password || !baseUrl) {
+    const config = readConfigFile();
+    account = account || config.account;
+    password = password || config.password;
+    baseUrl = baseUrl || config.baseUrl;
+  }
 
   if (!account || !password || !baseUrl) {
-    console.error('错误: 缺少必需的环境变量');
-    console.error('请设置以下环境变量:');
-    console.error('  JIRA_ACCOUNT - Jira 账号');
-    console.error('  JIRA_PASSWORD - Jira 密码');
-    console.error('  JIRA_BASE_URL - Jira 服务器地址');
+    console.error('错误: 缺少必需的配置');
+    console.error('请使用以下任一方式配置:');
+    console.error('\n1. 通过命令设置配置:');
+    console.error('  jira config set account <your-account>');
+    console.error('  jira config set password <your-password>');
+    console.error('  jira config set baseUrl <your-jira-url>');
+    console.error('\n2. 或设置环境变量:');
+    console.error('  export JIRA_ACCOUNT=<your-account>');
+    console.error('  export JIRA_PASSWORD=<your-password>');
+    console.error('  export JIRA_BASE_URL=<your-jira-url>');
     process.exit(1);
   }
 
@@ -629,6 +680,76 @@ issueCommand
       console.log(`正在移除任务 ${issueKey} 的标识...`);
       await jiraClient.removeFlag(issueKey);
       console.log(`✅ 任务 ${issueKey} 的标识已移除`);
+    } catch (error: any) {
+      console.error(`错误: ${error.message}`);
+      process.exit(1);
+    }
+  });
+
+const configCommand = program
+  .command('config')
+  .description('管理配置');
+
+configCommand
+  .command('set <key> <value>')
+  .description('设置配置项（account, password, baseUrl）')
+  .action((key: string, value: string) => {
+    try {
+      const validKeys = ['account', 'password', 'baseUrl'];
+      if (!validKeys.includes(key)) {
+        console.error(`错误: 无效的配置项 "${key}"`);
+        console.error(`有效的配置项: ${validKeys.join(', ')}`);
+        process.exit(1);
+      }
+
+      const config = readConfigFile();
+      config[key as keyof ConfigFile] = value;
+      writeConfigFile(config);
+
+      console.log(`✅ 配置已保存`);
+      console.log(`   ${key} = ${key === 'password' ? '******' : value}`);
+      console.log(`   配置文件: ${getConfigPath()}`);
+    } catch (error: any) {
+      console.error(`错误: ${error.message}`);
+      process.exit(1);
+    }
+  });
+
+configCommand
+  .command('get [key]')
+  .description('查看配置（不指定 key 则显示所有配置）')
+  .action((key?: string) => {
+    try {
+      const config = readConfigFile();
+      
+      if (key) {
+        const validKeys = ['account', 'password', 'baseUrl'];
+        if (!validKeys.includes(key)) {
+          console.error(`错误: 无效的配置项 "${key}"`);
+          console.error(`有效的配置项: ${validKeys.join(', ')}`);
+          process.exit(1);
+        }
+
+        const value = config[key as keyof ConfigFile];
+        if (value) {
+          console.log(`${key} = ${key === 'password' ? '******' : value}`);
+        } else {
+          console.log(`${key} 未设置`);
+        }
+      } else {
+        console.log('当前配置:');
+        console.log(`  配置文件: ${getConfigPath()}`);
+        console.log('');
+        console.log(`  account = ${config.account || '未设置'}`);
+        console.log(`  password = ${config.password ? '******' : '未设置'}`);
+        console.log(`  baseUrl = ${config.baseUrl || '未设置'}`);
+        
+        // 显示环境变量覆盖情况
+        const hasEnvOverride = process.env.JIRA_ACCOUNT || process.env.JIRA_PASSWORD || process.env.JIRA_BASE_URL;
+        if (hasEnvOverride) {
+          console.log('\n💡 提示: 检测到环境变量，将优先使用环境变量的值');
+        }
+      }
     } catch (error: any) {
       console.error(`错误: ${error.message}`);
       process.exit(1);

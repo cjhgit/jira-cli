@@ -20,6 +20,7 @@ Jira 命令行工具，用于查询和管理 Jira 任务。
 - 移除任务的标识（flag）
 - 查看项目列表
 - 查看可分配用户列表
+- 配置管理（通过命令设置账号信息）
 - 支持 TypeScript
 - 命令行友好
 - 支持全局安装
@@ -66,6 +67,35 @@ jira --help
 
 ## 配置
 
+有三种方式配置 Jira 连接信息：
+
+### 方式一：使用配置命令（推荐）
+
+```bash
+# 设置配置
+jira config set account your-username
+jira config set password your-password
+jira config set baseUrl https://your-jira-domain.com
+
+# 查看所有配置
+jira config get
+
+# 查看单个配置项
+jira config get account
+```
+
+配置会保存在 `~/.jira-easy-cli/config.json` 文件中。
+
+### 方式二：设置环境变量
+
+```bash
+export JIRA_ACCOUNT="your-username"
+export JIRA_PASSWORD="your-password"
+export JIRA_BASE_URL="https://your-jira-domain.com"
+```
+
+### 方式三：使用 .env 文件（仅本地开发）
+
 复制 `.env.example` 文件为 `.env` 并填入你的实际配置：
 
 ```bash
@@ -80,13 +110,7 @@ JIRA_PASSWORD=your-password
 JIRA_BASE_URL=https://your-jira-domain.com
 ```
 
-或者直接设置环境变量：
-
-```bash
-export JIRA_ACCOUNT="your-username"
-export JIRA_PASSWORD="your-password"
-export JIRA_BASE_URL="https://your-jira-domain.com"
-```
+> 注意：环境变量的优先级高于配置文件。如果同时设置了环境变量和配置文件，将优先使用环境变量的值。
 
 ## 使用方法
 
@@ -400,6 +424,26 @@ jira assignees -p PROJECT -m 20
 # 本地开发
 pnpm run dev assignees -p PROJECT
 ```
+
+### 配置管理
+
+```bash
+# 设置配置
+jira config set account your-username
+jira config set password your-password
+jira config set baseUrl https://your-jira-domain.com
+
+# 查看所有配置
+jira config get
+
+# 查看单个配置项
+jira config get account
+
+# 查看配置命令帮助
+jira config --help
+```
+
+配置会保存在 `~/.jira-easy-cli/config.json` 文件中。
 
 ## 示例
 

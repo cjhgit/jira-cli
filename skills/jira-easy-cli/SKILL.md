@@ -46,7 +46,22 @@ pnpm run dev issue view PROJECT-123
 
 ## 配置
 
-设置三个环境变量：
+支持三种配置方式：
+
+### 方式一：命令配置（推荐）
+
+```bash
+jira config set account your-username
+jira config set password your-password
+jira config set baseUrl https://your-jira-domain.com
+
+# 查看配置
+jira config get
+```
+
+配置保存在 `~/.jira-easy-cli/config.json`。
+
+### 方式二：环境变量
 
 ```bash
 export JIRA_ACCOUNT=your-username
@@ -54,7 +69,11 @@ export JIRA_PASSWORD=your-password
 export JIRA_BASE_URL=https://your-jira-domain.com
 ```
 
-缺少任一变量时工具会报错退出。
+### 方式三：.env 文件（仅开发模式）
+
+创建 `.env` 文件并设置相同的环境变量。
+
+**优先级**：环境变量 > 配置文件。缺少任一配置时工具会报错退出。
 
 ## 命令速查
 
@@ -113,7 +132,29 @@ export JIRA_BASE_URL=https://your-jira-domain.com
 | `jira projects` | — | — | 列出所有项目 |
 | `jira assignees` | `-p` 项目 或 `-i` 任务 | `-m` 最大结果(默认50) | 列出可分配的用户 |
 
+### 配置管理
+
+| 命令 | 必填参数 | 可选参数 | 说明 |
+|------|---------|---------|------|
+| `jira config set <key> <value>` | key (account/password/baseUrl), value | — | 设置配置 |
+| `jira config get [key]` | — | key (可选) | 查看配置 |
+
 ## 常用示例
+
+### 配置管理
+
+```bash
+# 首次使用，设置配置
+jira config set account your-username
+jira config set password your-password
+jira config set baseUrl https://your-jira-domain.com
+
+# 查看所有配置
+jira config get
+
+# 查看单个配置项
+jira config get account
+```
 
 ### 基本操作
 

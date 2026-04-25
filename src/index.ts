@@ -91,6 +91,7 @@ issueCommand
   .option('-a, --assignee <assignee>', '指派人')
   .option('-l, --labels <labels>', '标签（逗号分隔）')
   .option('--parent <parent>', '父任务 Key（用于创建子任务）')
+  .option('--no-sprint', '不自动添加到当前活动的 Sprint')
   .action(async (options) => {
     try {
       const config = getJiraConfig();
@@ -119,6 +120,43 @@ issueCommand
         console.log(`   父任务: ${options.parent}`);
       }
       console.log(`   链接: ${config.serviceInfo.baseUrl}/browse/${result.key}`);
+
+      // 自动添加到当前活动的 Sprint（除非指定了 --no-sprint）
+      // commander.js 将 --no-sprint 转换为 options.sprint = false
+      if (options.sprint !== false && !isSubtask) {
+        try {
+          console.log('\n正在查找当前活动的 Sprint...');
+          
+          // 查找项目的 Board
+          const boards = await jiraClient.getBoardsForProject(options.project);
+          
+          if (boards.length === 0) {
+            console.log('💡 提示: 项目没有 Board，任务保留在 Backlog');
+            return;
+          }
+
+          const boardId = boards[0].id;
+          
+          // 查找活动的 Sprint
+          const sprints = await jiraClient.getActiveSprints(boardId);
+          
+          if (sprints.length === 0) {
+            console.log('💡 提示: 没有活动的 Sprint，任务保留在 Backlog');
+            return;
+          }
+
+          const sprintId = sprints[0].id;
+          const sprintName = sprints[0].name;
+          
+          // 添加到 Sprint
+          await jiraClient.addIssueToSprint(result.key, sprintId);
+          console.log(`✅ 已自动添加到 Sprint: ${sprintName}`);
+          console.log(`💡 提示: 使用 --no-sprint 参数可以跳过自动添加到 Sprint`);
+        } catch (sprintError: any) {
+          // 如果添加到 Sprint 失败，只是显示提示，不影响任务创建
+          console.log(`💡 提示: 无法自动添加到 Sprint，任务保留在 Backlog`);
+        }
+      }
     } catch (error: any) {
       console.error(`错误: ${error.message}`);
       process.exit(1);
@@ -392,6 +430,81 @@ issueCommand
       console.log(`\n正在删除任务 ${issueKey}...`);
       await jiraClient.deleteIssue(issueKey);
       console.log(`✅ 任务 ${issueKey} 已成功删除`);
+    } catch (error: any) {
+      console.error(`错误: ${error.message}`);
+      process.exit(1);
+    }
+  });
+
+issueCommand
+  .command('add-to-current-sprint <issueKey>')
+  .description('将任务添加到当前活动的 sprint')
+  .option('-b, --board <boardId>', 'Board ID（可选，如不指定将自动查找）')
+  .option('-s, --sprint <sprintId>', 'Sprint ID（可选，如不指定将使用当前活动的 sprint）')
+  .action(async (issueKey: string, options) => {
+    try {
+      const config = getJiraConfig();
+      const jiraClient = new JiraClient(config);
+
+      console.log(`正在获取任务 ${issueKey} 的信息...`);
+      const issue = await jiraClient.getIssue(issueKey);
+      const projectKey = issue.fields.project.key;
+
+      let sprintId: number;
+
+      if (options.sprint) {
+        sprintId = parseInt(options.sprint);
+      } else {
+        // 如果没有指定 sprint，需要找到当前活动的 sprint
+        let boardId: number;
+
+        if (options.board) {
+          boardId = parseInt(options.board);
+        } else {
+          // 如果没有指定 board，查找项目的第一个 board
+          console.log(`正在查找项目 ${projectKey} 的 Board...`);
+          const boards = await jiraClient.getBoardsForProject(projectKey);
+          
+          if (boards.length === 0) {
+            throw new Error(`项目 ${projectKey} 没有找到 Board，请先创建 Scrum Board`);
+          }
+
+          boardId = boards[0].id;
+          console.log(`找到 Board: ${boards[0].name} (ID: ${boardId})`);
+        }
+
+        // 查找活动的 sprint
+        console.log(`正在查找活动的 Sprint...`);
+        const sprints = await jiraClient.getActiveSprints(boardId);
+
+        if (sprints.length === 0) {
+          throw new Error(`Board ${boardId} 没有活动的 Sprint，请先创建并启动一个 Sprint`);
+        }
+
+        sprintId = sprints[0].id;
+        console.log(`找到活动的 Sprint: ${sprints[0].name} (ID: ${sprintId})`);
+      }
+
+      console.log(`正在将任务 ${issueKey} 添加到 Sprint ${sprintId}...`);
+      await jiraClient.addIssueToSprint(issueKey, sprintId);
+      console.log(`✅ 任务 ${issueKey} 已成功添加到 Sprint`);
+    } catch (error: any) {
+      console.error(`错误: ${error.message}`);
+      process.exit(1);
+    }
+  });
+
+issueCommand
+  .command('remove-from-current-sprint <issueKey>')
+  .description('将任务从当前 sprint 中移出')
+  .action(async (issueKey: string) => {
+    try {
+      const config = getJiraConfig();
+      const jiraClient = new JiraClient(config);
+
+      console.log(`正在将任务 ${issueKey} 从 Sprint 中移出...`);
+      await jiraClient.removeIssueFromSprint(issueKey);
+      console.log(`✅ 任务 ${issueKey} 已从 Sprint 中移出`);
     } catch (error: any) {
       console.error(`错误: ${error.message}`);
       process.exit(1);

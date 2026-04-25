@@ -70,6 +70,16 @@ export interface JiraParentIssue {
   };
 }
 
+export interface JiraSprint {
+  id: number;
+  name: string;
+  state: string;
+  boardId?: number;
+  startDate?: string;
+  endDate?: string;
+  completeDate?: string;
+}
+
 export interface JiraIssueFields {
   issuetype: JiraIssueType;
   parent?: JiraParentIssue;
@@ -99,6 +109,8 @@ export interface JiraIssueFields {
   status: JiraStatus;
   assignee: JiraUser | null;
   reporter: JiraUser;
+  customfield_10006?: JiraSprint | JiraSprint[];  // Sprint 字段（可能是单个对象或数组）
+  sprint?: JiraSprint;  // Agile API 返回的 sprint 字段
 }
 
 export interface JiraIssue {

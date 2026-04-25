@@ -35,7 +35,40 @@ export class JiraClient {
 
   async getIssue(issueKey: string): Promise<JiraIssue> {
     try {
-      const response = await this.client.get<JiraIssue>(`/issue/${issueKey}`);
+      const response = await this.client.get<JiraIssue>(`/issue/${issueKey}`, {
+        params: {
+          expand: 'names',
+          fields: '*all'
+        }
+      });
+      
+      // 尝试使用 Agile API 获取 sprint 信息
+      try {
+        const agileClient = axios.create({
+          baseURL: `${this.config.serviceInfo.baseUrl}/rest/agile/1.0`,
+          auth: {
+            username: this.config.accountInfo.account,
+            password: this.config.accountInfo.password,
+          },
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        const sprintResponse = await agileClient.get(`/issue/${issueKey}`, {
+          params: {
+            fields: 'sprint'
+          }
+        });
+        
+        // 将 sprint 信息合并到 issue 中
+        if (sprintResponse.data?.fields?.sprint) {
+          (response.data.fields as any).sprint = sprintResponse.data.fields.sprint;
+        }
+      } catch (sprintError) {
+        // 如果获取 sprint 信息失败，忽略错误继续
+      }
+      
       return response.data;
     } catch (error: any) {
       if (error.response) {
@@ -356,6 +389,131 @@ export class JiraClient {
     }
   }
 
+  async addIssueToSprint(issueKey: string, sprintId: number): Promise<void> {
+    try {
+      const agileClient = axios.create({
+        baseURL: `${this.config.serviceInfo.baseUrl}/rest/agile/1.0`,
+        auth: {
+          username: this.config.accountInfo.account,
+          password: this.config.accountInfo.password,
+        },
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      await agileClient.post(`/sprint/${sprintId}/issue`, {
+        issues: [issueKey]
+      });
+    } catch (error: any) {
+      if (error.response) {
+        throw new Error(
+          `Jira API 错误: ${error.response.status} - ${error.response.statusText}`
+        );
+      } else if (error.request) {
+        throw new Error('无法连接到 Jira 服务器');
+      } else {
+        throw new Error(`请求失败: ${error.message}`);
+      }
+    }
+  }
+
+  async removeIssueFromSprint(issueKey: string): Promise<void> {
+    try {
+      const agileClient = axios.create({
+        baseURL: `${this.config.serviceInfo.baseUrl}/rest/agile/1.0`,
+        auth: {
+          username: this.config.accountInfo.account,
+          password: this.config.accountInfo.password,
+        },
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      // 使用 Agile API 将 issue 移回 backlog
+      await agileClient.post('/backlog/issue', {
+        issues: [issueKey]
+      });
+    } catch (error: any) {
+      if (error.response) {
+        throw new Error(
+          `Jira API 错误: ${error.response.status} - ${error.response.statusText}`
+        );
+      } else if (error.request) {
+        throw new Error('无法连接到 Jira 服务器');
+      } else {
+        throw new Error(`请求失败: ${error.message}`);
+      }
+    }
+  }
+
+  async getActiveSprints(boardId: number): Promise<any[]> {
+    try {
+      const agileClient = axios.create({
+        baseURL: `${this.config.serviceInfo.baseUrl}/rest/agile/1.0`,
+        auth: {
+          username: this.config.accountInfo.account,
+          password: this.config.accountInfo.password,
+        },
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const response = await agileClient.get(`/board/${boardId}/sprint`, {
+        params: {
+          state: 'active'
+        }
+      });
+
+      return response.data.values || [];
+    } catch (error: any) {
+      if (error.response) {
+        throw new Error(
+          `Jira API 错误: ${error.response.status} - ${error.response.statusText}`
+        );
+      } else if (error.request) {
+        throw new Error('无法连接到 Jira 服务器');
+      } else {
+        throw new Error(`请求失败: ${error.message}`);
+      }
+    }
+  }
+
+  async getBoardsForProject(projectKey: string): Promise<any[]> {
+    try {
+      const agileClient = axios.create({
+        baseURL: `${this.config.serviceInfo.baseUrl}/rest/agile/1.0`,
+        auth: {
+          username: this.config.accountInfo.account,
+          password: this.config.accountInfo.password,
+        },
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const response = await agileClient.get('/board', {
+        params: {
+          projectKeyOrId: projectKey
+        }
+      });
+
+      return response.data.values || [];
+    } catch (error: any) {
+      if (error.response) {
+        throw new Error(
+          `Jira API 错误: ${error.response.status} - ${error.response.statusText}`
+        );
+      } else if (error.request) {
+        throw new Error('无法连接到 Jira 服务器');
+      } else {
+        throw new Error(`请求失败: ${error.message}`);
+      }
+    }
+  }
+
   async createIssue(
     projectKey: string,
     summary: string,
@@ -432,6 +590,7 @@ export class JiraClient {
 
   formatIssue(issue: JiraIssue, comments?: JiraComment[]): string {
     const lines: string[] = [];
+    
     lines.push(`\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
     lines.push(`任务编号: ${issue.key}`);
     lines.push(`任务标题: ${issue.fields.summary}`);
@@ -447,6 +606,36 @@ export class JiraClient {
     }
     
     lines.push(`项目: ${issue.fields.project.name} (${issue.fields.project.key})`);
+    
+    // 显示 Sprint 信息
+    const sprintField = (issue.fields as any).sprint || issue.fields.customfield_10006;
+    
+    if (sprintField) {
+      // sprint 可能是对象（单个）或数组（多个）
+      if (Array.isArray(sprintField)) {
+        const activeSprint = sprintField.find((s: any) => s.state === 'active');
+        const futureSprint = sprintField.find((s: any) => s.state === 'future');
+        
+        if (activeSprint) {
+          lines.push(`Sprint: ${activeSprint.name} (活动中)`);
+        } else if (futureSprint) {
+          lines.push(`Sprint: ${futureSprint.name} (未开始)`);
+        } else {
+          const lastSprint = sprintField[sprintField.length - 1];
+          lines.push(`Sprint: ${lastSprint.name} (${lastSprint.state === 'closed' ? '已完成' : lastSprint.state})`);
+        }
+      } else if (sprintField.id && sprintField.name) {
+        // sprint 是单个对象
+        const stateText = sprintField.state === 'active' ? '活动中' :
+                         sprintField.state === 'future' ? '未开始' :
+                         sprintField.state === 'closed' ? '已完成' : sprintField.state;
+        lines.push(`Sprint: ${sprintField.name} (${stateText})`);
+      } else {
+        lines.push(`Sprint: Backlog`);
+      }
+    } else {
+      lines.push(`Sprint: Backlog`);
+    }
     
     if (issue.fields.parent) {
       lines.push(`父任务: ${issue.fields.parent.key} - ${issue.fields.parent.fields.summary}`);

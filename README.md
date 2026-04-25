@@ -12,6 +12,8 @@ Jira 命令行工具，用于查询和管理 Jira 任务。
 - 添加评论
 - 指派任务
 - 删除任务
+- 将任务添加到当前 Sprint
+- 将任务从当前 Sprint 中移出
 - 查看项目列表
 - 查看可分配用户列表
 - 支持 TypeScript
@@ -113,7 +115,11 @@ pnpm run dev issue view PROJECT-123
 
 ```bash
 # 创建基本任务（全局安装）
+# 如果项目有活动的 Sprint，会自动添加到当前 Sprint
 jira issue create -p PROJECT -s "任务标题" -d "任务描述"
+
+# 创建任务但不添加到 Sprint（保留在 Backlog）
+jira issue create -p PROJECT -s "任务标题" --no-sprint
 
 # 创建带优先级的任务
 jira issue create -p PROJECT -s "紧急任务" --priority High
@@ -212,6 +218,32 @@ pnpm run dev issue delete PROJECT-123
 ```
 
 ⚠️ **警告**：删除任务是不可逆的操作！默认会显示任务信息并等待你按回车确认，使用 `-y` 参数可以跳过确认直接删除。
+
+### 将任务添加到当前 Sprint
+
+```bash
+# 自动添加到当前活动的 sprint（全局安装）
+jira issue add-to-current-sprint PROJECT-123
+
+# 指定 Board ID
+jira issue add-to-current-sprint PROJECT-123 -b 1
+
+# 指定 Sprint ID
+jira issue add-to-current-sprint PROJECT-123 -s 10
+
+# 本地开发
+pnpm run dev issue add-to-current-sprint PROJECT-123
+```
+
+### 将任务从当前 Sprint 中移出
+
+```bash
+# 全局安装后
+jira issue remove-from-current-sprint PROJECT-123
+
+# 本地开发
+pnpm run dev issue remove-from-current-sprint PROJECT-123
+```
 
 ### 查看项目列表
 
@@ -341,7 +373,7 @@ jira issue search -j "project = PROJECT AND status = 待办"
 
 ### `jira issue create`
 
-创建新任务。
+创建新任务。默认情况下，如果项目有活动的 Sprint，会自动将任务添加到当前 Sprint。
 
 选项：
 - `-p, --project <project>` - 项目 Key（必需）
@@ -352,6 +384,7 @@ jira issue search -j "project = PROJECT AND status = 待办"
 - `-a, --assignee <assignee>` - 指派人（可选）
 - `-l, --labels <labels>` - 标签，逗号分隔（可选）
 - `--parent <parent>` - 父任务 Key，用于创建子任务（可选）
+- `--no-sprint` - 不自动添加到当前活动的 Sprint，任务保留在 Backlog（可选）
 
 ### `jira issue list`
 
@@ -414,6 +447,24 @@ jira issue search -j "project = PROJECT AND status = 待办"
 - `-y, --yes` - 跳过确认，直接删除（可选，默认：false）
 
 ⚠️ **警告**：删除操作不可逆！默认会显示任务信息并等待回车确认，使用 `-y` 参数可以跳过确认直接删除。
+
+### `jira issue add-to-current-sprint <issueKey>`
+
+将任务添加到当前活动的 Sprint。
+
+参数：
+- `<issueKey>` - 任务 Key（必需），例如：PROJECT-123
+
+选项：
+- `-b, --board <boardId>` - Board ID（可选，如不指定将自动查找项目的第一个 Board）
+- `-s, --sprint <sprintId>` - Sprint ID（可选，如不指定将使用当前活动的 Sprint）
+
+### `jira issue remove-from-current-sprint <issueKey>`
+
+将任务从当前 Sprint 中移出。
+
+参数：
+- `<issueKey>` - 任务 Key（必需），例如：PROJECT-123
 
 ### `jira projects`
 

@@ -1,5 +1,5 @@
 {
-  "name": "jira-cli",
+  "name": "jira-easy-cli",
   "version": "26.425.0",
   "description": "A command-line tool for managing Jira issues - create, query, list, update status, add comments, assign, and search tasks with ease",
   "main": "dist/index.js",

@@ -236,6 +236,47 @@ export class JiraClient {
     }
   }
 
+<<<<<<< HEAD
+=======
+  async updateIssue(issueKey: string, fields: Record<string, any>): Promise<void> {
+    try {
+      await this.client.put(`/issue/${issueKey}`, { fields });
+    } catch (error: any) {
+      if (error.response) {
+        const errorMessage = error.response.data?.errors
+          ? JSON.stringify(error.response.data.errors)
+          : error.response.statusText;
+        throw new Error(
+          `Jira API 错误: ${error.response.status} - ${errorMessage}`
+        );
+      } else if (error.request) {
+        throw new Error('无法连接到 Jira 服务器');
+      } else {
+        throw new Error(`请求失败: ${error.message}`);
+      }
+    }
+  }
+
+  async updateComment(issueKey: string, commentId: string, body: string): Promise<JiraComment> {
+    try {
+      const response = await this.client.put<JiraComment>(`/issue/${issueKey}/comment/${commentId}`, {
+        body
+      });
+      return response.data;
+    } catch (error: any) {
+      if (error.response) {
+        throw new Error(
+          `Jira API 错误: ${error.response.status} - ${error.response.statusText}`
+        );
+      } else if (error.request) {
+        throw new Error('无法连接到 Jira 服务器');
+      } else {
+        throw new Error(`请求失败: ${error.message}`);
+      }
+    }
+  }
+
+>>>>>>> worktree-edit-comment
   async deleteComment(issueKey: string, commentId: string): Promise<void> {
     try {
       await this.client.delete(`/issue/${issueKey}/comment/${commentId}`);

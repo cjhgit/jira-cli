@@ -248,6 +248,73 @@ issueCommand
   });
 
 issueCommand
+<<<<<<< HEAD
+=======
+  .command('edit <issueKey>')
+  .description('修改任务（标题、描述、优先级、标签、任务类型）')
+  .option('-s, --summary <summary>', '任务标题')
+  .option('-d, --description <description>', '任务描述')
+  .option('-p, --priority <priority>', '优先级')
+  .option('-l, --labels <labels>', '标签（逗号分隔）')
+  .option('-t, --issue-type <type>', '任务类型')
+  .action(async (issueKey: string, options) => {
+    try {
+      const config = getJiraConfig();
+      const jiraClient = new JiraClient(config);
+
+      const fields: Record<string, any> = {};
+
+      if (options.summary) fields.summary = options.summary;
+      if (options.description) fields.description = options.description;
+      if (options.priority) fields.priority = { name: options.priority };
+      if (options.labels) fields.labels = options.labels.split(',').map((l: string) => l.trim());
+      if (options.issueType) fields.issuetype = { name: options.issueType };
+
+      if (Object.keys(fields).length === 0) {
+        console.error('错误: 请至少指定一个要修改的字段');
+        process.exit(1);
+      }
+
+      await jiraClient.updateIssue(issueKey, fields);
+
+      const updated: string[] = [];
+      if (options.summary) updated.push(`标题: ${options.summary}`);
+      if (options.description) updated.push(`描述: ${options.description}`);
+      if (options.priority) updated.push(`优先级: ${options.priority}`);
+      if (options.labels) updated.push(`标签: ${options.labels}`);
+      if (options.issueType) updated.push(`任务类型: ${options.issueType}`);
+
+      console.log(`✅ 任务 ${issueKey} 已更新:`);
+      updated.forEach(item => console.log(`   ${item}`));
+    } catch (error: any) {
+      console.error(`错误: ${error.message}`);
+      process.exit(1);
+    }
+  });
+
+issueCommand
+  .command('edit-comment <issueKey>')
+  .description('修改任务评论')
+  .requiredOption('-c, --comment-id <commentId>', '评论 ID')
+  .requiredOption('-t, --text <text>', '新的评论内容')
+  .action(async (issueKey: string, options) => {
+    try {
+      const config = getJiraConfig();
+      const jiraClient = new JiraClient(config);
+
+      console.log(`正在修改任务 ${issueKey} 的评论 ${options.commentId}...`);
+      const comment = await jiraClient.updateComment(issueKey, options.commentId, options.text);
+      console.log(`✅ 评论已修改`);
+      console.log(`   评论ID: ${comment.id}`);
+      console.log(`   新内容: ${options.text}`);
+    } catch (error: any) {
+      console.error(`错误: ${error.message}`);
+      process.exit(1);
+    }
+  });
+
+issueCommand
+>>>>>>> worktree-edit-comment
   .command('delete-comment <issueKey>')
   .description('删除任务评论')
   .requiredOption('-c, --comment-id <commentId>', '评论 ID')

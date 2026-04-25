@@ -934,6 +934,18 @@ export class JiraClient {
       });
     }
     
+    if (issue.fields.attachment && issue.fields.attachment.length > 0) {
+      lines.push(`附件 (${issue.fields.attachment.length}):`);
+      issue.fields.attachment.forEach((attachment: any) => {
+        const sizeKB = (attachment.size / 1024).toFixed(2);
+        const created = new Date(attachment.created).toLocaleString('zh-CN');
+        lines.push(`  - ${attachment.filename}`);
+        lines.push(`    大小: ${sizeKB} KB | 类型: ${attachment.mimeType}`);
+        lines.push(`    上传者: ${attachment.author.displayName} | 时间: ${created}`);
+        lines.push(`    下载链接: ${attachment.content}`);
+      });
+    }
+    
     if (issue.fields.description) {
       lines.push(`\n描述:`);
       lines.push(issue.fields.description);

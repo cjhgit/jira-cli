@@ -80,6 +80,18 @@ export interface JiraSprint {
   completeDate?: string;
 }
 
+export interface JiraAttachment {
+  self: string;
+  id: string;
+  filename: string;
+  author: JiraUser;
+  created: string;
+  size: number;
+  mimeType: string;
+  content: string;
+  thumbnail?: string;
+}
+
 export interface JiraIssueFields {
   issuetype: JiraIssueType;
   parent?: JiraParentIssue;
@@ -109,6 +121,7 @@ export interface JiraIssueFields {
   status: JiraStatus;
   assignee: JiraUser | null;
   reporter: JiraUser;
+  attachment?: JiraAttachment[];
   customfield_10006?: JiraSprint | JiraSprint[];  // Sprint 字段（可能是单个对象或数组）
   sprint?: JiraSprint;  // Agile API 返回的 sprint 字段
 }

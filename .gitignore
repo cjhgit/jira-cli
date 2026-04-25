@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.jira-config.json
+.env
+*.log
+.DS_Store
+.tmp/*
+.cjh.md

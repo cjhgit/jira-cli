@@ -1,0 +1,33 @@
+{
+  "name": "jira-cli",
+  "version": "1.0.0",
+  "description": "A command-line tool for managing Jira issues - create, query, and search tasks with ease",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "query": "ts-node src/index.ts",
+    "create": "ts-node src/index.ts create",
+    "get": "ts-node src/index.ts get",
+    "search": "ts-node src/index.ts search"
+  },
+  "keywords": [
+    "jira",
+    "cli",
+    "command-line",
+    "issue-tracker",
+    "project-management",
+    "typescript"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "axios": "^1.6.5"
+  }
+}

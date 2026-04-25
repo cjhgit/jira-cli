@@ -7,3 +7,4 @@ dist/
 .tmp/*
 .cjh.md
 pnpm-lock.yaml
+.worktrees

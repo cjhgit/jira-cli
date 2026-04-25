@@ -523,6 +523,80 @@ issueCommand
     }
   });
 
+issueCommand
+  .command('set-parent <issueKey>')
+  .description('将任务设置为另一个任务的子任务')
+  .requiredOption('-p, --parent <parent>', '父任务 Key')
+  .option('--auto-convert', '自动转换（创建新子任务并删除原任务）', false)
+  .action(async (issueKey: string, options) => {
+    try {
+      const config = getJiraConfig();
+      const jiraClient = new JiraClient(config);
+
+      console.log(`正在将任务 ${issueKey} 设置为 ${options.parent} 的子任务...`);
+      const result = await jiraClient.setParent(issueKey, options.parent, { autoConvert: options.autoConvert });
+      
+      if (result.newKey) {
+        console.log(`\n✅ 任务已成功转换为子任务`);
+        console.log(`\n重要提示:`);
+        console.log(`  原任务: ${issueKey} (已删除)`);
+        console.log(`  新子任务: ${result.newKey}`);
+        console.log(`  新子任务链接: ${config.serviceInfo.baseUrl}/browse/${result.newKey}`);
+        console.log(`  父任务: ${options.parent}`);
+        console.log(`\n所有内容（标题、描述、评论等）已复制到新子任务`);
+        console.log(`\n💡 提示: 使用 jira issue view ${result.newKey} 查看新子任务信息`);
+      } else {
+        console.log(`✅ 任务 ${issueKey} 已成功设置为 ${options.parent} 的子任务`);
+        
+        const issue = await jiraClient.getIssue(issueKey);
+        console.log(`\n任务信息:`);
+        console.log(`  Key: ${issue.key}`);
+        console.log(`  标题: ${issue.fields.summary}`);
+        console.log(`  父任务: ${issue.fields.parent?.key} - ${issue.fields.parent?.fields.summary}`);
+        console.log(`\n💡 提示: 使用 jira issue view ${issueKey} 查看完整任务信息`);
+      }
+    } catch (error: any) {
+      console.error(`错误: ${error.message}`);
+      process.exit(1);
+    }
+  });
+
+issueCommand
+  .command('remove-parent <issueKey>')
+  .description('将子任务变成独立任务（移除父任务关联）')
+  .option('--auto-convert', '自动转换（创建新任务并删除原子任务）', false)
+  .action(async (issueKey: string, options) => {
+    try {
+      const config = getJiraConfig();
+      const jiraClient = new JiraClient(config);
+
+      console.log(`正在将子任务 ${issueKey} 变成独立任务...`);
+      const result = await jiraClient.removeParent(issueKey, { autoConvert: options.autoConvert });
+      
+      if (result.newKey) {
+        console.log(`\n✅ 子任务已成功转换为独立任务`);
+        console.log(`\n重要提示:`);
+        console.log(`  原子任务: ${issueKey} (已删除)`);
+        console.log(`  新任务: ${result.newKey}`);
+        console.log(`  新任务链接: ${config.serviceInfo.baseUrl}/browse/${result.newKey}`);
+        console.log(`\n所有内容（标题、描述、评论等）已复制到新任务`);
+        console.log(`\n💡 提示: 使用 jira issue view ${result.newKey} 查看新任务信息`);
+      } else {
+        console.log(`✅ 任务 ${issueKey} 已成功变成独立任务`);
+        
+        const issue = await jiraClient.getIssue(issueKey);
+        console.log(`\n任务信息:`);
+        console.log(`  Key: ${issue.key}`);
+        console.log(`  标题: ${issue.fields.summary}`);
+        console.log(`  类型: ${issue.fields.issuetype.name}`);
+        console.log(`\n💡 提示: 使用 jira issue view ${issueKey} 查看完整任务信息`);
+      }
+    } catch (error: any) {
+      console.error(`错误: ${error.message}`);
+      process.exit(1);
+    }
+  });
+
 program
   .command('projects')
   .description('列出所有项目')

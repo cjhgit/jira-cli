@@ -551,7 +551,8 @@ export class JiraClient {
       // 验证：如果指定了父任务，必须使用子任务类型
       if (options.parent) {
         const issueType = options.issueType || 'Task';
-        const isSubtaskType = issueType.toLowerCase().includes('sub');
+        const issueTypeLower = issueType.toLowerCase();
+        const isSubtaskType = issueTypeLower.includes('sub') || issueTypeLower.includes('子任务');
         
         if (!isSubtaskType) {
           throw new Error(
@@ -611,6 +612,189 @@ export class JiraClient {
         throw new Error('无法连接到 Jira 服务器');
       } else {
         throw new Error(`请求失败: ${error.message}`);
+      }
+    }
+  }
+
+  async setParent(issueKey: string, parentKey: string, options?: { autoConvert?: boolean }): Promise<{ newKey?: string }> {
+    try {
+      const issue = await this.getIssue(issueKey);
+      
+      if (issue.fields.parent) {
+        throw new Error(
+          `任务 ${issueKey} 已经是子任务，其父任务为 ${issue.fields.parent.key}\n` +
+          `如需更改父任务，请先使用以下命令移除当前父任务：\n` +
+          `  jira issue remove-parent ${issueKey} --auto-convert`
+        );
+      }
+      
+      const isSubtaskType = issue.fields.issuetype.subtask;
+      
+      // 如果不是子任务类型，需要重建任务
+      if (!isSubtaskType) {
+        if (options?.autoConvert) {
+          console.log(`正在将任务转换为子任务（会创建新任务并删除原任务）...`);
+          
+          // 获取所有评论
+          const comments = await this.getComments(issueKey);
+          
+          // 创建新的子任务
+          console.log(`正在创建新的子任务...`);
+          const newIssue = await this.createIssue(
+            issue.fields.project.key,
+            issue.fields.summary,
+            issue.fields.description || '',
+            {
+              issueType: '子任务',
+              priority: issue.fields.priority?.name,
+              assignee: issue.fields.assignee?.name,
+              labels: issue.fields.labels?.join(','),
+              parent: parentKey
+            }
+          );
+          
+          console.log(`新子任务已创建: ${newIssue.key}`);
+          
+          // 复制所有评论到新任务
+          if (comments.length > 0) {
+            console.log(`正在复制 ${comments.length} 条评论...`);
+            for (const comment of comments) {
+              await this.addComment(
+                newIssue.key,
+                `[从 ${issueKey} 迁移]\n${comment.body}\n\n原作者: ${comment.author.displayName} (${new Date(comment.created).toLocaleString('zh-CN')})`
+              );
+            }
+          }
+          
+          // 删除原任务
+          console.log(`正在删除原任务 ${issueKey}...`);
+          await this.deleteIssue(issueKey);
+          
+          return { newKey: newIssue.key };
+        } else {
+          throw new Error(
+            `由于 Jira API 限制，无法直接将任务转换为子任务。\n\n` +
+            `该命令提供自动转换功能（会创建新子任务并删除原任务）：\n` +
+            `  jira issue set-parent ${issueKey} -p ${parentKey} --auto-convert\n\n` +
+            `或者手动操作：\n` +
+            `1. 在 Jira 网页界面创建一个新的子任务\n` +
+            `2. 将原任务的内容复制到新子任务\n` +
+            `3. 删除原任务`
+          );
+        }
+      }
+      
+      // 如果已经是子任务类型，只需要设置父任务
+      await this.client.put(`/issue/${issueKey}`, {
+        fields: {
+          parent: { key: parentKey }
+        }
+      });
+      
+      return {};
+    } catch (error: any) {
+      if (error.response) {
+        const errorMessage = error.response.data?.errors
+          ? JSON.stringify(error.response.data.errors)
+          : error.response.statusText;
+        throw new Error(
+          `Jira API 错误: ${error.response.status} - ${errorMessage}`
+        );
+      } else if (error.request) {
+        throw new Error('无法连接到 Jira 服务器');
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  async removeParent(issueKey: string, options?: { autoConvert?: boolean }): Promise<{ newKey?: string }> {
+    try {
+      const issue = await this.getIssue(issueKey);
+      
+      if (!issue.fields.parent) {
+        throw new Error(
+          `任务 ${issueKey} 不是子任务，无需移除父任务`
+        );
+      }
+      
+      const isSubtaskType = issue.fields.issuetype.subtask;
+      
+      if (isSubtaskType) {
+        if (options?.autoConvert) {
+          // 自动转换：创建新任务 + 删除旧任务
+          console.log(`正在将子任务转换为独立任务（会创建新任务并删除原子任务）...`);
+          
+          // 获取所有评论
+          const comments = await this.getComments(issueKey);
+          
+          // 创建新的独立任务
+          console.log(`正在创建新的独立任务...`);
+          const newIssue = await this.createIssue(
+            issue.fields.project.key,
+            issue.fields.summary,
+            issue.fields.description || '',
+            {
+              issueType: '任务',
+              priority: issue.fields.priority?.name,
+              assignee: issue.fields.assignee?.name,
+              labels: issue.fields.labels?.join(',')
+            }
+          );
+          
+          console.log(`新任务已创建: ${newIssue.key}`);
+          
+          // 复制所有评论到新任务
+          if (comments.length > 0) {
+            console.log(`正在复制 ${comments.length} 条评论...`);
+            for (const comment of comments) {
+              await this.addComment(
+                newIssue.key,
+                `[从 ${issueKey} 迁移]\n${comment.body}\n\n原作者: ${comment.author.displayName} (${new Date(comment.created).toLocaleString('zh-CN')})`
+              );
+            }
+          }
+          
+          // 删除原子任务
+          console.log(`正在删除原子任务 ${issueKey}...`);
+          await this.deleteIssue(issueKey);
+          
+          return { newKey: newIssue.key };
+        } else {
+          throw new Error(
+            `由于 Jira API 限制，无法直接移除子任务的父任务。\n\n` +
+            `该命令提供自动转换功能（会创建新任务并删除原子任务）：\n` +
+            `  使用 --auto-convert 参数自动转换\n\n` +
+            `或者手动操作：\n` +
+            `1. 在 Jira 网页界面打开任务: ${this.config.serviceInfo.baseUrl}/browse/${issueKey}\n` +
+            `2. 点击右上角"更多"(···)菜单\n` +
+            `3. 选择"转换为问题"或"Convert to Issue"\n` +
+            `4. 选择目标任务类型（如"任务"或"Task"）\n` +
+            `5. 完成转换流程`
+          );
+        }
+      }
+      
+      // 如果不是子任务类型，尝试移除父任务
+      await this.client.put(`/issue/${issueKey}`, {
+        update: {
+          parent: [{ set: null }]
+        }
+      });
+      
+      return {};
+    } catch (error: any) {
+      if (error.response) {
+        const errorMessage = error.response.data?.errors
+          ? JSON.stringify(error.response.data.errors)
+          : error.response.statusText;
+        throw new Error(
+          `Jira API 错误: ${error.response.status} - ${errorMessage}`
+        );
+      } else if (error.request) {
+        throw new Error('无法连接到 Jira 服务器');
+      } else {
+        throw error;
       }
     }
   }

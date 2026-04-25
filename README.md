@@ -14,6 +14,8 @@ Jira 命令行工具，用于查询和管理 Jira 任务。
 - 删除任务
 - 将任务添加到当前 Sprint
 - 将任务从当前 Sprint 中移出
+- 将任务设置为子任务
+- 将子任务变成独立任务
 - 查看项目列表
 - 查看可分配用户列表
 - 支持 TypeScript
@@ -262,6 +264,75 @@ jira issue remove-from-current-sprint PROJECT-123
 pnpm run dev issue remove-from-current-sprint PROJECT-123
 ```
 
+### 将任务设置为子任务
+
+将一个独立任务变成另一个任务的子任务。
+
+⚠️ **注意**：由于 Jira API 限制，此操作会创建新的子任务并删除原任务（任务 Key 会改变，但内容会完整保留）。
+
+```bash
+# 将 PROJECT-124 设置为 PROJECT-123 的子任务（全局安装）
+jira issue set-parent PROJECT-124 -p PROJECT-123 --auto-convert
+
+# 本地开发
+pnpm run dev issue set-parent PROJECT-124 -p PROJECT-123 --auto-convert
+```
+
+成功输出示例：
+```
+正在将任务 CR-5722 设置为 CR-5710 的子任务...
+正在将任务转换为子任务（会创建新任务并删除原任务）...
+正在创建新的子任务...
+新子任务已创建: CR-5723
+正在删除原任务 CR-5722...
+
+✅ 任务已成功转换为子任务
+
+重要提示:
+  原任务: CR-5722 (已删除)
+  新子任务: CR-5723
+  新子任务链接: http://jira.weyatech.cn:8083/browse/CR-5723
+  父任务: CR-5710
+
+所有内容（标题、描述、评论等）已复制到新子任务
+
+💡 提示: 使用 jira issue view CR-5723 查看新子任务信息
+```
+
+### 将子任务变成独立任务
+
+移除子任务的父任务关联，使其变成独立任务。
+
+⚠️ **注意**：由于 Jira API 限制，此操作会创建新的独立任务并删除原子任务（任务 Key 会改变，但内容会完整保留）。
+
+```bash
+# 将子任务变成独立任务（全局安装）
+jira issue remove-parent PROJECT-124 --auto-convert
+
+# 本地开发
+pnpm run dev issue remove-parent PROJECT-124 --auto-convert
+```
+
+成功输出示例：
+```
+正在将子任务 CR-5721 变成独立任务...
+正在将子任务转换为独立任务（会创建新任务并删除原子任务）...
+正在创建新的独立任务...
+新任务已创建: CR-5722
+正在删除原子任务 CR-5721...
+
+✅ 子任务已成功转换为独立任务
+
+重要提示:
+  原子任务: CR-5721 (已删除)
+  新任务: CR-5722
+  新任务链接: http://jira.weyatech.cn:8083/browse/CR-5722
+
+所有内容（标题、描述、评论等）已复制到新任务
+
+💡 提示: 使用 jira issue view CR-5722 查看新任务信息
+```
+
 ### 查看项目列表
 
 ```bash
@@ -482,6 +553,31 @@ jira issue search -j "project = PROJECT AND status = 待办"
 
 参数：
 - `<issueKey>` - 任务 Key（必需），例如：PROJECT-123
+
+### `jira issue set-parent <issueKey>`
+
+将任务设置为另一个任务的子任务。
+
+参数：
+- `<issueKey>` - 任务 Key（必需），例如：PROJECT-124
+
+选项：
+- `-p, --parent <parent>` - 父任务 Key（必需）
+- `--auto-convert` - 自动转换（会创建新子任务并删除原任务）
+
+⚠️ **重要**：由于 Jira API 限制，需要使用 `--auto-convert` 参数。此操作会创建新的子任务并删除原任务，任务 Key 会改变，但所有内容（标题、描述、评论等）会完整保留。
+
+### `jira issue remove-parent <issueKey>`
+
+将子任务变成独立任务（移除父任务关联）。
+
+参数：
+- `<issueKey>` - 任务 Key（必需），例如：PROJECT-124
+
+选项：
+- `--auto-convert` - 自动转换（会创建新任务并删除原子任务）
+
+⚠️ **重要**：由于 Jira API 限制，需要使用 `--auto-convert` 参数。此操作会创建新的独立任务并删除原子任务，任务 Key 会改变，但所有内容（标题、描述、评论等）会完整保留。
 
 ### `jira projects`
 

@@ -236,6 +236,23 @@ export class JiraClient {
     }
   }
 
+  async getComments(issueKey: string): Promise<JiraComment[]> {
+    try {
+      const response = await this.client.get<{ comments: JiraComment[] }>(`/issue/${issueKey}/comment`);
+      return response.data.comments;
+    } catch (error: any) {
+      if (error.response) {
+        throw new Error(
+          `Jira API 错误: ${error.response.status} - ${error.response.statusText}`
+        );
+      } else if (error.request) {
+        throw new Error('无法连接到 Jira 服务器');
+      } else {
+        throw new Error(`请求失败: ${error.message}`);
+      }
+    }
+  }
+
   async listProjects(): Promise<JiraProject[]> {
     try {
       const response = await this.client.get<JiraProject[]>('/project');
@@ -334,7 +351,7 @@ export class JiraClient {
     }
   }
 
-  formatIssue(issue: JiraIssue): string {
+  formatIssue(issue: JiraIssue, comments?: JiraComment[]): string {
     const lines: string[] = [];
     lines.push(`\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
     lines.push(`任务编号: ${issue.key}`);
@@ -363,6 +380,20 @@ export class JiraClient {
       lines.push(`\n描述: 无`);
     }
     
+    if (comments && comments.length > 0) {
+      lines.push(`\n评论 (${comments.length}):`);
+      lines.push('────────────────────────────────────────');
+      comments.forEach((comment, index) => {
+        const author = comment.author.displayName;
+        const created = new Date(comment.created).toLocaleString('zh-CN');
+        lines.push(`#${index + 1} ${author} - ${created}`);
+        lines.push(`   ${comment.body}`);
+        lines.push('────────────────────────────────────────');
+      });
+    } else {
+      lines.push(`\n评论: 无`);
+    }
+
     lines.push(`\n创建时间: ${issue.fields.created}`);
     lines.push(`更新时间: ${issue.fields.updated}`);
     

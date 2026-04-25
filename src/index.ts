@@ -73,7 +73,8 @@ issueCommand
       
       console.log(`正在查询任务: ${issueKey}...`);
       const issue = await jiraClient.getIssue(issueKey);
-      console.log(jiraClient.formatIssue(issue));
+      const comments = await jiraClient.getComments(issueKey);
+      console.log(jiraClient.formatIssue(issue, comments));
     } catch (error: any) {
       console.error(`错误: ${error.message}`);
       process.exit(1);

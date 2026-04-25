@@ -71,7 +71,6 @@ issueCommand
       const config = getJiraConfig();
       const jiraClient = new JiraClient(config);
       
-      console.log(`正在查询任务: ${issueKey}...`);
       const issue = await jiraClient.getIssue(issueKey);
       const comments = await jiraClient.getComments(issueKey);
       console.log(jiraClient.formatIssue(issue, comments));

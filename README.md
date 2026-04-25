@@ -9,11 +9,26 @@ Jira 命令行工具，用于查询和管理 Jira 任务。
 - 搜索任务（支持 JQL）
 - 支持 TypeScript
 - 命令行友好
+- 支持全局安装
 
 ## 安装
 
+### 本地开发
+
 ```bash
-npm install
+pnpm install
+```
+
+### 全局安装
+
+```bash
+# 从源码全局安装
+pnpm install
+pnpm run build
+pnpm link --global
+
+# 现在可以在任何地方使用 jira 命令
+jira --help
 ```
 
 ## 配置
@@ -42,51 +57,65 @@ export JIRA_BASE_URL="https://your-jira-domain.com"
 
 ## 使用方法
 
+### 查看帮助
+
+```bash
+# 查看主命令帮助
+jira --help
+
+# 查看 issue 子命令帮助
+jira issue --help
+
+# 查看具体命令的帮助
+jira issue view --help
+jira issue create --help
+jira issue search --help
+```
+
+### 查看任务详情
+
+```bash
+# 全局安装后
+jira issue view PROJECT-123
+
+# 本地开发
+pnpm run dev issue view PROJECT-123
+```
+
 ### 创建任务
 
 ```bash
-# 创建基本任务
-npm run create -- --project=PROJECT --summary="任务标题" --description="任务描述"
+# 创建基本任务（全局安装）
+jira issue create -p PROJECT -s "任务标题" -d "任务描述"
 
 # 创建带优先级的任务
-npm run create -- --project=PROJECT --summary="紧急任务" --priority=High
+jira issue create -p PROJECT -s "紧急任务" --priority High
 
 # 创建并指派任务
-npm run create -- --project=PROJECT --summary="新功能" --assignee=username
+jira issue create -p PROJECT -s "新功能" -a username
 
 # 创建带标签的任务
-npm run create -- --project=PROJECT --summary="新任务" --labels="frontend,urgent"
+jira issue create -p PROJECT -s "新任务" -l "frontend,urgent"
 
 # 创建指定类型的任务
-npm run create -- --project=PROJECT --summary="Bug修复" --issueType=Bug
-```
+jira issue create -p PROJECT -s "Bug修复" -t Bug
 
-### 查询单个任务
-
-```bash
-# 使用 get 命令
-npm run get PROJECT-123
-
-# 或直接使用 query
-npm run query PROJECT-123
-
-# 或直接使用 ts-node
-npx ts-node src/index.ts PROJECT-123
+# 本地开发方式
+pnpm run dev issue create -p PROJECT -s "任务标题"
 ```
 
 ### 搜索任务（JQL）
 
 ```bash
-npm run search -- --jql="project = PROJECT AND status = 待办"
-npm run search -- --jql="project = PROJECT AND assignee = currentUser()"
-```
+# 全局安装后
+jira issue search -j "project = PROJECT AND status = 待办"
+jira issue search -j "project = PROJECT AND assignee = currentUser()"
 
-### 编译为 JavaScript
+# 限制最大结果数
+jira issue search -j "project = PROJECT" -m 20
 
-```bash
-npm run build
-npm start get PROJECT-123
-npm start create -- --project=PROJECT --summary="新任务"
+# 本地开发
+pnpm run dev issue search -j "project = PROJECT AND status = 待办"
 ```
 
 ## 示例
@@ -94,7 +123,7 @@ npm start create -- --project=PROJECT --summary="新任务"
 ### 创建任务
 
 ```bash
-npm run create -- --project=PROJECT --summary="实现用户登录功能" --description="需要实现用户名密码登录" --priority=High --assignee=username
+jira issue create -p PROJECT -s "实现用户登录功能" -d "需要实现用户名密码登录" --priority High -a username
 ```
 
 输出示例：
@@ -109,11 +138,12 @@ npm run create -- --project=PROJECT --summary="实现用户登录功能" --descr
 ### 查询任务
 
 ```bash
-npm run query PROJECT-123
+jira issue view PROJECT-123
 ```
 
 输出示例：
 ```
+正在查询任务: PROJECT-123...
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 任务编号: PROJECT-123
 任务标题: 实现用户登录功能
@@ -137,12 +167,65 @@ npm run query PROJECT-123
 ### 搜索任务
 
 ```bash
-npm run search -- --jql="project = PROJECT AND status = 待办"
+jira issue search -j "project = PROJECT AND status = 待办"
 ```
+
+## 命令参数说明
+
+### `jira issue view <issueKey>`
+
+查看任务详情。
+
+参数：
+- `<issueKey>` - 任务 Key（必需），例如：PROJECT-123
+
+### `jira issue create`
+
+创建新任务。
+
+选项：
+- `-p, --project <project>` - 项目 Key（必需）
+- `-s, --summary <summary>` - 任务标题（必需）
+- `-d, --description <description>` - 任务描述（可选）
+- `-t, --issue-type <type>` - 任务类型（可选，默认：Task）
+- `--priority <priority>` - 优先级（可选）
+- `-a, --assignee <assignee>` - 指派人（可选）
+- `-l, --labels <labels>` - 标签，逗号分隔（可选）
+
+### `jira issue search`
+
+搜索任务。
+
+选项：
+- `-j, --jql <jql>` - JQL 查询语句（必需）
+- `-m, --max-results <number>` - 最大结果数（可选，默认：50）
 
 ## 开发
 
 项目结构：
-- `src/index.ts` - 主入口文件
+- `src/index.ts` - 主入口文件，命令行接口
 - `src/jira-client.ts` - Jira API 客户端
 - `src/types.ts` - TypeScript 类型定义
+
+### 本地开发
+
+```bash
+# 安装依赖
+pnpm install
+
+# 运行开发版本
+pnpm run dev issue view PROJECT-123
+
+# 编译
+pnpm run build
+
+# 本地链接测试全局安装
+pnpm link --global
+jira issue view PROJECT-123
+```
+
+## 技术栈
+
+- TypeScript - 类型安全
+- Commander.js - 命令行解析
+- Axios - HTTP 客户端

@@ -3,15 +3,23 @@
   "version": "1.0.0",
   "description": "A command-line tool for managing Jira issues - create, query, and search tasks with ease",
   "main": "dist/index.js",
+  "bin": {
+    "jira": "dist/index.js"
+  },
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "ts-node src/index.ts",
-    "query": "ts-node src/index.ts",
-    "create": "ts-node src/index.ts create",
-    "get": "ts-node src/index.ts get",
-    "search": "ts-node src/index.ts search"
+    "prepublishOnly": "pnpm run build"
   },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "keywords": [
     "jira",
     "cli",
@@ -23,11 +31,13 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "@types/commander": "^2.12.5",
     "@types/node": "^20.0.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
   },
   "dependencies": {
-    "axios": "^1.6.5"
+    "axios": "^1.6.5",
+    "commander": "^14.0.3"
   }
 }

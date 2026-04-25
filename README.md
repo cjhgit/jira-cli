@@ -19,15 +19,35 @@ Jira 命令行工具，用于查询和管理 Jira 任务。
 
 ## 安装
 
+### 通过 npm 全局安装（推荐）
+
+```bash
+# 使用 npm 安装
+npm install -g jira-easy-cli
+
+# 或使用 pnpm 安装
+pnpm add -g jira-easy-cli
+
+# 或使用 yarn 安装
+yarn global add jira-easy-cli
+
+# 安装完成后可以在任何地方使用 jira 命令
+jira --help
+```
+
 ### 本地开发
 
 ```bash
 pnpm install
 ```
 
-### 全局安装
+### 从源码全局安装
 
 ```bash
+# 克隆仓库
+git clone https://github.com/cjhgit/jira-cli.git
+cd jira-cli
+
 # 从源码全局安装
 pnpm install
 pnpm run build

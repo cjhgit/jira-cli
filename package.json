@@ -28,6 +28,14 @@
     "project-management",
     "typescript"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cjhgit/jira-cli.git"
+  },
+  "homepage": "https://github.com/cjhgit/jira-cli#readme",
+  "bugs": {
+    "url": "https://github.com/cjhgit/jira-cli/issues"
+  },
   "author": "",
   "license": "MIT",
   "devDependencies": {

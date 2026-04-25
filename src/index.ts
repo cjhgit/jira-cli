@@ -196,6 +196,8 @@ issueCommand
   .option('-s, --status <status>', '按状态筛选')
   .option('-a, --assignee <assignee>', '按指派人筛选')
   .option('-r, --reporter <reporter>', '按报告人筛选')
+  .option('--parent <parent>', '查看指定任务的子任务')
+  .option('--current-sprint', '只显示当前活动 Sprint 中的任务', false)
   .option('--all', '显示所有任务（包括已完成）', false)
   .option('-l, --limit <limit>', '最大结果数', '50')
   .action(async (options) => {
@@ -203,11 +205,20 @@ issueCommand
       const config = getJiraConfig();
       const jiraClient = new JiraClient(config);
       
-      console.log(`正在查询项目 ${options.project} 的任务...`);
+      let filterDesc = `项目 ${options.project}`;
+      if (options.parent) {
+        filterDesc = `任务 ${options.parent} 的子任务`;
+      } else if (options.currentSprint) {
+        filterDesc = `项目 ${options.project} 当前 Sprint 中`;
+      }
+      console.log(`正在查询${filterDesc}的任务...`);
+      
       const issues = await jiraClient.listIssues(options.project, {
         status: options.status,
         assignee: options.assignee,
         reporter: options.reporter,
+        parent: options.parent,
+        currentSprint: options.currentSprint,
         all: options.all,
         limit: parseInt(options.limit),
       });
@@ -218,19 +229,20 @@ issueCommand
       }
 
       console.log(`\n📋 找到 ${issues.length} 个任务\n`);
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('Key          状态            优先级        摘要');
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('序号  Key          状态            优先级        摘要');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
-      issues.forEach(issue => {
+      issues.forEach((issue, index) => {
+        const no = String(index + 1).padEnd(5);
         const key = issue.key.padEnd(12);
         const status = (issue.fields.status?.name || 'N/A').padEnd(14);
         const priority = (issue.fields.priority?.name || 'N/A').padEnd(12);
         const summary = truncate(issue.fields.summary || '', 40);
-        console.log(`${key} ${status} ${priority} ${summary}`);
+        console.log(`${no} ${key} ${status} ${priority} ${summary}`);
       });
 
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     } catch (error: any) {
       console.error(`错误: ${error.message}`);
       process.exit(1);

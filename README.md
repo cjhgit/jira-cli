@@ -143,11 +143,26 @@ pnpm run dev issue create -p PROJECT -s "任务标题"
 # 列出项目中的任务（全局安装）
 jira issue list -p PROJECT
 
+# 只列出当前活动 Sprint 中的任务
+jira issue list -p PROJECT --current-sprint
+
+# 查看某个任务的所有子任务
+jira issue list -p PROJECT --parent PROJECT-123
+
 # 按状态筛选
 jira issue list -p PROJECT -s "In Progress"
 
 # 按指派人筛选
 jira issue list -p PROJECT -a username
+
+# 组合筛选：当前 Sprint 中我的任务
+jira issue list -p PROJECT --current-sprint -a username
+
+# 组合筛选：当前 Sprint 中进行中的任务
+jira issue list -p PROJECT --current-sprint -s "In Progress"
+
+# 组合筛选：某个任务下我的进行中子任务
+jira issue list -p PROJECT --parent PROJECT-123 -a username -s "In Progress"
 
 # 显示所有任务（包括已完成）
 jira issue list -p PROJECT --all
@@ -158,6 +173,8 @@ jira issue list -p PROJECT -l 20
 # 本地开发
 pnpm run dev issue list -p PROJECT
 ```
+
+**提示**: 列表会显示序号，方便计数和沟通，例如"第3个任务"。
 
 ### 搜索任务（JQL）
 

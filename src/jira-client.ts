@@ -109,6 +109,33 @@ export class JiraClient {
     try {
       let jql = `project = "${projectKey}"`;
 
+      // 如果需要过滤父任务的子任务
+      if (options.parent) {
+        jql += ` AND parent = "${options.parent}"`;
+      }
+
+      // 如果需要过滤当前 Sprint
+      if (options.currentSprint) {
+        // 查找项目的 Board
+        const boards = await this.getBoardsForProject(projectKey);
+        
+        if (boards.length === 0) {
+          throw new Error(`项目 ${projectKey} 没有找到 Board，无法过滤 Sprint`);
+        }
+
+        const boardId = boards[0].id;
+        
+        // 查找活动的 Sprint
+        const sprints = await this.getActiveSprints(boardId);
+        
+        if (sprints.length === 0) {
+          throw new Error(`项目 ${projectKey} 没有活动的 Sprint`);
+        }
+
+        const sprintId = sprints[0].id;
+        jql += ` AND Sprint = ${sprintId}`;
+      }
+
       if (options.status) {
         jql += ` AND status = "${options.status}"`;
       }
@@ -146,7 +173,7 @@ export class JiraClient {
       } else if (error.request) {
         throw new Error('无法连接到 Jira 服务器');
       } else {
-        throw new Error(`请求失败: ${error.message}`);
+        throw error;
       }
     }
   }

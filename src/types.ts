@@ -168,6 +168,8 @@ export interface ListIssuesOptions {
   reporter?: string;
   all?: boolean;
   limit?: number;
+  currentSprint?: boolean;
+  parent?: string;
 }
 
 export interface JiraAssignableUser {

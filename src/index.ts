@@ -248,6 +248,32 @@ issueCommand
   });
 
 issueCommand
+  .command('delete-comment <issueKey>')
+  .description('删除任务评论')
+  .requiredOption('-c, --comment-id <commentId>', '评论 ID')
+  .option('-y, --yes', '跳过确认，直接删除', false)
+  .action(async (issueKey: string, options) => {
+    try {
+      const config = getJiraConfig();
+      const jiraClient = new JiraClient(config);
+
+      if (!options.yes) {
+        const confirmed = await waitForConfirmation(`确认删除任务 ${issueKey} 的评论 ${options.commentId}？(按回车确认，Ctrl+C 取消): `);
+        if (!confirmed) {
+          console.log('已取消删除');
+          return;
+        }
+      }
+
+      await jiraClient.deleteComment(issueKey, options.commentId);
+      console.log(`✅ 评论 ${options.commentId} 已删除`);
+    } catch (error: any) {
+      console.error(`错误: ${error.message}`);
+      process.exit(1);
+    }
+  });
+
+issueCommand
   .command('update-description <issueKey>')
   .description('修改任务描述')
   .requiredOption('-d, --description <description>', '新的描述内容')

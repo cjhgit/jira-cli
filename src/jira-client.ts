@@ -236,6 +236,22 @@ export class JiraClient {
     }
   }
 
+  async deleteComment(issueKey: string, commentId: string): Promise<void> {
+    try {
+      await this.client.delete(`/issue/${issueKey}/comment/${commentId}`);
+    } catch (error: any) {
+      if (error.response) {
+        throw new Error(
+          `Jira API 错误: ${error.response.status} - ${error.response.statusText}`
+        );
+      } else if (error.request) {
+        throw new Error('无法连接到 Jira 服务器');
+      } else {
+        throw new Error(`请求失败: ${error.message}`);
+      }
+    }
+  }
+
   async getComments(issueKey: string): Promise<JiraComment[]> {
     try {
       const response = await this.client.get<{ comments: JiraComment[] }>(`/issue/${issueKey}/comment`);
@@ -386,7 +402,7 @@ export class JiraClient {
       comments.forEach((comment, index) => {
         const author = comment.author.displayName;
         const created = new Date(comment.created).toLocaleString('zh-CN');
-        lines.push(`#${index + 1} ${author} - ${created}`);
+        lines.push(`#${index + 1} (ID: ${comment.id}) ${author} - ${created}`);
         lines.push(`   ${comment.body}`);
         lines.push('────────────────────────────────────────');
       });

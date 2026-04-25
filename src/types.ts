@@ -156,3 +156,12 @@ export interface ListIssuesOptions {
   all?: boolean;
   limit?: number;
 }
+
+export interface JiraAssignableUser {
+  self: string;
+  name: string;
+  key: string;
+  emailAddress: string;
+  displayName: string;
+  active: boolean;
+}

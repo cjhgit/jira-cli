@@ -71,9 +71,9 @@ issueCommand
       const config = getJiraConfig();
       const jiraClient = new JiraClient(config);
       
-      console.log(`正在查询任务: ${issueKey}...`);
       const issue = await jiraClient.getIssue(issueKey);
-      console.log(jiraClient.formatIssue(issue));
+      const comments = await jiraClient.getComments(issueKey);
+      console.log(jiraClient.formatIssue(issue, comments));
     } catch (error: any) {
       console.error(`错误: ${error.message}`);
       process.exit(1);
@@ -237,10 +237,118 @@ issueCommand
     try {
       const config = getJiraConfig();
       const jiraClient = new JiraClient(config);
-      
+
       console.log(`正在指派任务 ${issueKey}...`);
       await jiraClient.assignIssue(issueKey, options.assignee);
       console.log(`✅ 任务 ${issueKey} 已指派给: ${options.assignee}`);
+    } catch (error: any) {
+      console.error(`错误: ${error.message}`);
+      process.exit(1);
+    }
+  });
+
+issueCommand
+  .command('edit <issueKey>')
+  .description('修改任务（标题、描述、优先级、标签、任务类型）')
+  .option('-s, --summary <summary>', '任务标题')
+  .option('-d, --description <description>', '任务描述')
+  .option('-p, --priority <priority>', '优先级')
+  .option('-l, --labels <labels>', '标签（逗号分隔）')
+  .option('-t, --issue-type <type>', '任务类型')
+  .action(async (issueKey: string, options) => {
+    try {
+      const config = getJiraConfig();
+      const jiraClient = new JiraClient(config);
+
+      const fields: Record<string, any> = {};
+
+      if (options.summary) fields.summary = options.summary;
+      if (options.description) fields.description = options.description;
+      if (options.priority) fields.priority = { name: options.priority };
+      if (options.labels) fields.labels = options.labels.split(',').map((l: string) => l.trim());
+      if (options.issueType) fields.issuetype = { name: options.issueType };
+
+      if (Object.keys(fields).length === 0) {
+        console.error('错误: 请至少指定一个要修改的字段');
+        process.exit(1);
+      }
+
+      await jiraClient.updateIssue(issueKey, fields);
+
+      const updated: string[] = [];
+      if (options.summary) updated.push(`标题: ${options.summary}`);
+      if (options.description) updated.push(`描述: ${options.description}`);
+      if (options.priority) updated.push(`优先级: ${options.priority}`);
+      if (options.labels) updated.push(`标签: ${options.labels}`);
+      if (options.issueType) updated.push(`任务类型: ${options.issueType}`);
+
+      console.log(`✅ 任务 ${issueKey} 已更新:`);
+      updated.forEach(item => console.log(`   ${item}`));
+    } catch (error: any) {
+      console.error(`错误: ${error.message}`);
+      process.exit(1);
+    }
+  });
+
+issueCommand
+  .command('edit-comment <issueKey>')
+  .description('修改任务评论')
+  .requiredOption('-c, --comment-id <commentId>', '评论 ID')
+  .requiredOption('-t, --text <text>', '新的评论内容')
+  .action(async (issueKey: string, options) => {
+    try {
+      const config = getJiraConfig();
+      const jiraClient = new JiraClient(config);
+
+      console.log(`正在修改任务 ${issueKey} 的评论 ${options.commentId}...`);
+      const comment = await jiraClient.updateComment(issueKey, options.commentId, options.text);
+      console.log(`✅ 评论已修改`);
+      console.log(`   评论ID: ${comment.id}`);
+      console.log(`   新内容: ${options.text}`);
+    } catch (error: any) {
+      console.error(`错误: ${error.message}`);
+      process.exit(1);
+    }
+  });
+
+issueCommand
+  .command('delete-comment <issueKey>')
+  .description('删除任务评论')
+  .requiredOption('-c, --comment-id <commentId>', '评论 ID')
+  .option('-y, --yes', '跳过确认，直接删除', false)
+  .action(async (issueKey: string, options) => {
+    try {
+      const config = getJiraConfig();
+      const jiraClient = new JiraClient(config);
+
+      if (!options.yes) {
+        const confirmed = await waitForConfirmation(`确认删除任务 ${issueKey} 的评论 ${options.commentId}？(按回车确认，Ctrl+C 取消): `);
+        if (!confirmed) {
+          console.log('已取消删除');
+          return;
+        }
+      }
+
+      await jiraClient.deleteComment(issueKey, options.commentId);
+      console.log(`✅ 评论 ${options.commentId} 已删除`);
+    } catch (error: any) {
+      console.error(`错误: ${error.message}`);
+      process.exit(1);
+    }
+  });
+
+issueCommand
+  .command('update-description <issueKey>')
+  .description('修改任务描述')
+  .requiredOption('-d, --description <description>', '新的描述内容')
+  .action(async (issueKey: string, options) => {
+    try {
+      const config = getJiraConfig();
+      const jiraClient = new JiraClient(config);
+
+      console.log(`正在修改任务 ${issueKey} 的描述...`);
+      await jiraClient.updateDescription(issueKey, options.description);
+      console.log(`✅ 任务 ${issueKey} 的描述已更新`);
     } catch (error: any) {
       console.error(`错误: ${error.message}`);
       process.exit(1);
@@ -304,6 +412,59 @@ program
       });
 
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    } catch (error: any) {
+      console.error(`错误: ${error.message}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('assignees')
+  .description('列出可分配的用户')
+  .option('-p, --project <project>', '项目 Key')
+  .option('-i, --issue <issue>', '任务 Key')
+  .option('-m, --max-results <number>', '最大结果数', '50')
+  .action(async (options) => {
+    try {
+      const config = getJiraConfig();
+      const jiraClient = new JiraClient(config);
+
+      if (!options.project && !options.issue) {
+        console.error('错误: 必须指定项目 Key (-p) 或任务 Key (-i)');
+        process.exit(1);
+      }
+
+      const context = options.project 
+        ? `项目 ${options.project}` 
+        : `任务 ${options.issue}`;
+      
+      console.log(`正在获取 ${context} 的可分配用户列表...`);
+      const users = await jiraClient.listAssignableUsers(
+        options.project,
+        options.issue,
+        parseInt(options.maxResults)
+      );
+
+      if (users.length === 0) {
+        console.log('👥 没有找到可分配的用户');
+        return;
+      }
+
+      console.log(`\n👥 找到 ${users.length} 个可分配的用户\n`);
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('用户名                显示名称                      邮箱');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+      users.forEach(user => {
+        const username = user.name.padEnd(20);
+        const displayName = truncate(user.displayName, 28).padEnd(28);
+        const email = user.emailAddress || 'N/A';
+        const status = user.active ? '' : ' (已禁用)';
+        console.log(`${username} ${displayName} ${email}${status}`);
+      });
+
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log(`\n💡 提示: 使用用户名（第一列）来分配任务，例如: jira issue assign PROJECT-123 -a ${users[0].name}`);
     } catch (error: any) {
       console.error(`错误: ${error.message}`);
       process.exit(1);

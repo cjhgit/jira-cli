@@ -8,7 +8,8 @@ import {
   JiraComment,
   JiraSearchResult,
   ListIssuesOptions,
-  JiraProject
+  JiraProject,
+  JiraAssignableUser
 } from './types';
 
 export class JiraClient {
@@ -215,6 +216,97 @@ export class JiraClient {
     }
   }
 
+  async updateDescription(issueKey: string, description: string): Promise<void> {
+    try {
+      await this.client.put(`/issue/${issueKey}`, {
+        fields: {
+          description: description
+        }
+      });
+    } catch (error: any) {
+      if (error.response) {
+        throw new Error(
+          `Jira API 错误: ${error.response.status} - ${error.response.statusText}`
+        );
+      } else if (error.request) {
+        throw new Error('无法连接到 Jira 服务器');
+      } else {
+        throw new Error(`请求失败: ${error.message}`);
+      }
+    }
+  }
+
+  async updateIssue(issueKey: string, fields: Record<string, any>): Promise<void> {
+    try {
+      await this.client.put(`/issue/${issueKey}`, { fields });
+    } catch (error: any) {
+      if (error.response) {
+        const errorMessage = error.response.data?.errors
+          ? JSON.stringify(error.response.data.errors)
+          : error.response.statusText;
+        throw new Error(
+          `Jira API 错误: ${error.response.status} - ${errorMessage}`
+        );
+      } else if (error.request) {
+        throw new Error('无法连接到 Jira 服务器');
+      } else {
+        throw new Error(`请求失败: ${error.message}`);
+      }
+    }
+  }
+
+  async updateComment(issueKey: string, commentId: string, body: string): Promise<JiraComment> {
+    try {
+      const response = await this.client.put<JiraComment>(`/issue/${issueKey}/comment/${commentId}`, {
+        body
+      });
+      return response.data;
+    } catch (error: any) {
+      if (error.response) {
+        throw new Error(
+          `Jira API 错误: ${error.response.status} - ${error.response.statusText}`
+        );
+      } else if (error.request) {
+        throw new Error('无法连接到 Jira 服务器');
+      } else {
+        throw new Error(`请求失败: ${error.message}`);
+      }
+    }
+  }
+
+  async deleteComment(issueKey: string, commentId: string): Promise<void> {
+    try {
+      await this.client.delete(`/issue/${issueKey}/comment/${commentId}`);
+    } catch (error: any) {
+      if (error.response) {
+        throw new Error(
+          `Jira API 错误: ${error.response.status} - ${error.response.statusText}`
+        );
+      } else if (error.request) {
+        throw new Error('无法连接到 Jira 服务器');
+      } else {
+        throw new Error(`请求失败: ${error.message}`);
+      }
+    }
+  }
+
+  async getComments(issueKey: string): Promise<JiraComment[]> {
+    try {
+      const response = await this.client.get<{ comments: JiraComment[] }>(`/issue/${issueKey}/comment`);
+      return response.data.comments;
+    } catch (error: any) {
+      if (error.response) {
+        throw new Error(
+          `Jira API 错误: ${error.response.status} - ${error.response.statusText}`
+        );
+      } else if (error.request) {
+        throw new Error('无法连接到 Jira 服务器');
+      } else {
+        throw new Error(`请求失败: ${error.message}`);
+      }
+    }
+  }
+
   async listProjects(): Promise<JiraProject[]> {
     try {
       const response = await this.client.get<JiraProject[]>('/project');
@@ -228,6 +320,38 @@ export class JiraClient {
         throw new Error('无法连接到 Jira 服务器');
       } else {
         throw new Error(`请求失败: ${error.message}`);
+      }
+    }
+  }
+
+  async listAssignableUsers(projectKey?: string, issueKey?: string, maxResults: number = 50): Promise<JiraAssignableUser[]> {
+    try {
+      const params: any = {
+        maxResults,
+      };
+
+      if (projectKey) {
+        params.project = projectKey;
+      } else if (issueKey) {
+        params.issueKey = issueKey;
+      } else {
+        throw new Error('必须指定项目 Key 或任务 Key');
+      }
+
+      const response = await this.client.get<JiraAssignableUser[]>('/user/assignable/search', {
+        params,
+      });
+
+      return response.data;
+    } catch (error: any) {
+      if (error.response) {
+        throw new Error(
+          `Jira API 错误: ${error.response.status} - ${error.response.statusText}`
+        );
+      } else if (error.request) {
+        throw new Error('无法连接到 Jira 服务器');
+      } else {
+        throw error;
       }
     }
   }
@@ -281,7 +405,7 @@ export class JiraClient {
     }
   }
 
-  formatIssue(issue: JiraIssue): string {
+  formatIssue(issue: JiraIssue, comments?: JiraComment[]): string {
     const lines: string[] = [];
     lines.push(`\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
     lines.push(`任务编号: ${issue.key}`);
@@ -310,6 +434,20 @@ export class JiraClient {
       lines.push(`\n描述: 无`);
     }
     
+    if (comments && comments.length > 0) {
+      lines.push(`\n评论 (${comments.length}):`);
+      lines.push('────────────────────────────────────────');
+      comments.forEach((comment, index) => {
+        const author = comment.author.displayName;
+        const created = new Date(comment.created).toLocaleString('zh-CN');
+        lines.push(`#${index + 1} (ID: ${comment.id}) ${author} - ${created}`);
+        lines.push(`   ${comment.body}`);
+        lines.push('────────────────────────────────────────');
+      });
+    } else {
+      lines.push(`\n评论: 无`);
+    }
+
     lines.push(`\n创建时间: ${issue.fields.created}`);
     lines.push(`更新时间: ${issue.fields.updated}`);
     

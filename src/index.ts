@@ -597,6 +597,44 @@ issueCommand
     }
   });
 
+issueCommand
+  .command('add-flag <issueKey>')
+  .description('给任务添加标识（flag），标记为需要特别关注')
+  .option('-m, --message <message>', '说明原因（可选）')
+  .action(async (issueKey: string, options) => {
+    try {
+      const config = getJiraConfig();
+      const jiraClient = new JiraClient(config);
+
+      console.log(`正在给任务 ${issueKey} 添加标识...`);
+      await jiraClient.addFlag(issueKey, options.message);
+      console.log(`✅ 任务 ${issueKey} 已添加标识 🚩`);
+      if (options.message) {
+        console.log(`   原因: ${options.message}`);
+      }
+    } catch (error: any) {
+      console.error(`错误: ${error.message}`);
+      process.exit(1);
+    }
+  });
+
+issueCommand
+  .command('remove-flag <issueKey>')
+  .description('移除任务的标识（flag）')
+  .action(async (issueKey: string) => {
+    try {
+      const config = getJiraConfig();
+      const jiraClient = new JiraClient(config);
+
+      console.log(`正在移除任务 ${issueKey} 的标识...`);
+      await jiraClient.removeFlag(issueKey);
+      console.log(`✅ 任务 ${issueKey} 的标识已移除`);
+    } catch (error: any) {
+      console.error(`错误: ${error.message}`);
+      process.exit(1);
+    }
+  });
+
 program
   .command('projects')
   .description('列出所有项目')

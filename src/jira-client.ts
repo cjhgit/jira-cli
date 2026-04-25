@@ -799,6 +799,80 @@ export class JiraClient {
     }
   }
 
+  async addFlag(issueKey: string, message?: string): Promise<void> {
+    try {
+      // 使用标签功能来实现 flag，这是最通用和兼容的方式
+      const issue = await this.getIssue(issueKey);
+      const currentLabels = issue.fields.labels || [];
+      
+      // 如果已经有 FLAGGED 标签，则不重复添加
+      if (currentLabels.includes('FLAGGED')) {
+        console.log('提示: 任务已经被标记');
+        if (message) {
+          await this.addComment(issueKey, `🚩 标记说明: ${message}`);
+        }
+        return;
+      }
+      
+      // 添加 FLAGGED 标签
+      const newLabels = [...currentLabels, 'FLAGGED'];
+      
+      await this.client.put(`/issue/${issueKey}`, {
+        fields: {
+          labels: newLabels
+        }
+      });
+
+      // 如果提供了消息，添加一个评论来说明原因
+      if (message) {
+        await this.addComment(issueKey, `🚩 标记为需要关注: ${message}`);
+      }
+    } catch (error: any) {
+      if (error.response) {
+        throw new Error(
+          `Jira API 错误: ${error.response.status} - ${error.response.statusText}`
+        );
+      } else if (error.request) {
+        throw new Error('无法连接到 Jira 服务器');
+      } else {
+        throw new Error(`请求失败: ${error.message}`);
+      }
+    }
+  }
+
+  async removeFlag(issueKey: string): Promise<void> {
+    try {
+      // 移除 FLAGGED 标签
+      const issue = await this.getIssue(issueKey);
+      const currentLabels = issue.fields.labels || [];
+      
+      // 如果没有 FLAGGED 标签，提示用户
+      if (!currentLabels.includes('FLAGGED')) {
+        console.log('提示: 任务未被标记');
+        return;
+      }
+      
+      // 移除 FLAGGED 标签
+      const newLabels = currentLabels.filter(label => label !== 'FLAGGED');
+      
+      await this.client.put(`/issue/${issueKey}`, {
+        fields: {
+          labels: newLabels
+        }
+      });
+    } catch (error: any) {
+      if (error.response) {
+        throw new Error(
+          `Jira API 错误: ${error.response.status} - ${error.response.statusText}`
+        );
+      } else if (error.request) {
+        throw new Error('无法连接到 Jira 服务器');
+      } else {
+        throw new Error(`请求失败: ${error.message}`);
+      }
+    }
+  }
+
   formatIssue(issue: JiraIssue, comments?: JiraComment[]): string {
     const lines: string[] = [];
     

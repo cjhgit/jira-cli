@@ -16,6 +16,8 @@ Jira 命令行工具，用于查询和管理 Jira 任务。
 - 将任务从当前 Sprint 中移出
 - 将任务设置为子任务
 - 将子任务变成独立任务
+- 给任务添加标识（flag）
+- 移除任务的标识（flag）
 - 查看项目列表
 - 查看可分配用户列表
 - 支持 TypeScript
@@ -333,6 +335,46 @@ pnpm run dev issue remove-parent PROJECT-124 --auto-convert
 💡 提示: 使用 jira issue view CR-5722 查看新任务信息
 ```
 
+### 给任务添加标识（flag）
+
+给任务添加标识，通常用于标记任务被阻塞或需要特别关注。
+
+**实现方式**：通过添加 `FLAGGED` 标签来标记任务，这样更通用、兼容所有 Jira 实例。
+
+```bash
+# 添加标识（全局安装）
+jira issue add-flag PROJECT-123
+
+# 添加标识并说明原因
+jira issue add-flag PROJECT-123 -m "等待外部依赖"
+
+# 本地开发
+pnpm run dev issue add-flag PROJECT-123 -m "需要技术评审"
+```
+
+成功输出示例：
+```
+正在给任务 CR-5723 添加标识...
+✅ 任务 CR-5723 已添加标识 🚩
+   原因: 测试 flag 功能
+```
+
+添加标识后，任务会：
+- 在标签列表中显示 `FLAGGED` 标签
+- 如果提供了原因，会添加一条带 🚩 图标的评论说明
+
+### 移除任务的标识（flag）
+
+移除任务的标识（移除 `FLAGGED` 标签）。
+
+```bash
+# 移除标识（全局安装）
+jira issue remove-flag PROJECT-123
+
+# 本地开发
+pnpm run dev issue remove-flag PROJECT-123
+```
+
 ### 查看项目列表
 
 ```bash
@@ -578,6 +620,29 @@ jira issue search -j "project = PROJECT AND status = 待办"
 - `--auto-convert` - 自动转换（会创建新任务并删除原子任务）
 
 ⚠️ **重要**：由于 Jira API 限制，需要使用 `--auto-convert` 参数。此操作会创建新的独立任务并删除原子任务，任务 Key 会改变，但所有内容（标题、描述、评论等）会完整保留。
+
+### `jira issue add-flag <issueKey>`
+
+给任务添加标识（flag），标记为需要特别关注或被阻塞。
+
+参数：
+- `<issueKey>` - 任务 Key（必需），例如：PROJECT-123
+
+选项：
+- `-m, --message <message>` - 说明原因（可选）
+
+💡 **实现说明**：
+- 通过添加 `FLAGGED` 标签来标记任务，这是最通用和兼容的方式
+- 添加标识后，任务的标签列表中会显示 `FLAGGED`
+- 如果提供了原因，会自动添加一条带 🚩 图标的评论
+- 便于团队在任务列表或看板上快速识别需要关注的任务
+
+### `jira issue remove-flag <issueKey>`
+
+移除任务的标识（flag）。
+
+参数：
+- `<issueKey>` - 任务 Key（必需），例如：PROJECT-123
 
 ### `jira projects`
 

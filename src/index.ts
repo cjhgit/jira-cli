@@ -4,6 +4,18 @@ import { Command } from 'commander';
 import { JiraClient } from './jira-client';
 import { JiraConfig } from './types';
 import * as readline from 'readline';
+import { readFileSync } from 'fs';
+import { join } from 'path';
+
+function getVersion(): string {
+  try {
+    const packageJsonPath = join(__dirname, '../package.json');
+    const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
+    return packageJson.version;
+  } catch {
+    return '1.0.0'; // fallback version
+  }
+}
 
 function getJiraConfig(): JiraConfig {
   const account = process.env.JIRA_ACCOUNT;
@@ -45,7 +57,7 @@ const program = new Command();
 program
   .name('jira')
   .description('Jira 任务管理命令行工具')
-  .version('1.0.0');
+  .version(getVersion());
 
 const issueCommand = program
   .command('issue')

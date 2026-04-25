@@ -215,6 +215,26 @@ export class JiraClient {
     }
   }
 
+  async updateDescription(issueKey: string, description: string): Promise<void> {
+    try {
+      await this.client.put(`/issue/${issueKey}`, {
+        fields: {
+          description: description
+        }
+      });
+    } catch (error: any) {
+      if (error.response) {
+        throw new Error(
+          `Jira API 错误: ${error.response.status} - ${error.response.statusText}`
+        );
+      } else if (error.request) {
+        throw new Error('无法连接到 Jira 服务器');
+      } else {
+        throw new Error(`请求失败: ${error.message}`);
+      }
+    }
+  }
+
   async listProjects(): Promise<JiraProject[]> {
     try {
       const response = await this.client.get<JiraProject[]>('/project');

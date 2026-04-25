@@ -8,7 +8,8 @@ import {
   JiraComment,
   JiraSearchResult,
   ListIssuesOptions,
-  JiraProject
+  JiraProject,
+  JiraAssignableUser
 } from './types';
 
 export class JiraClient {
@@ -248,6 +249,38 @@ export class JiraClient {
         throw new Error('无法连接到 Jira 服务器');
       } else {
         throw new Error(`请求失败: ${error.message}`);
+      }
+    }
+  }
+
+  async listAssignableUsers(projectKey?: string, issueKey?: string, maxResults: number = 50): Promise<JiraAssignableUser[]> {
+    try {
+      const params: any = {
+        maxResults,
+      };
+
+      if (projectKey) {
+        params.project = projectKey;
+      } else if (issueKey) {
+        params.issueKey = issueKey;
+      } else {
+        throw new Error('必须指定项目 Key 或任务 Key');
+      }
+
+      const response = await this.client.get<JiraAssignableUser[]>('/user/assignable/search', {
+        params,
+      });
+
+      return response.data;
+    } catch (error: any) {
+      if (error.response) {
+        throw new Error(
+          `Jira API 错误: ${error.response.status} - ${error.response.statusText}`
+        );
+      } else if (error.request) {
+        throw new Error('无法连接到 Jira 服务器');
+      } else {
+        throw error;
       }
     }
   }

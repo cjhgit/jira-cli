@@ -248,7 +248,7 @@ issueCommand
   });
 
 issueCommand
-  .command('edit-description <issueKey>')
+  .command('update-description <issueKey>')
   .description('修改任务描述')
   .requiredOption('-d, --description <description>', '新的描述内容')
   .action(async (issueKey: string, options) => {
@@ -322,6 +322,59 @@ program
       });
 
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    } catch (error: any) {
+      console.error(`错误: ${error.message}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('assignees')
+  .description('列出可分配的用户')
+  .option('-p, --project <project>', '项目 Key')
+  .option('-i, --issue <issue>', '任务 Key')
+  .option('-m, --max-results <number>', '最大结果数', '50')
+  .action(async (options) => {
+    try {
+      const config = getJiraConfig();
+      const jiraClient = new JiraClient(config);
+
+      if (!options.project && !options.issue) {
+        console.error('错误: 必须指定项目 Key (-p) 或任务 Key (-i)');
+        process.exit(1);
+      }
+
+      const context = options.project 
+        ? `项目 ${options.project}` 
+        : `任务 ${options.issue}`;
+      
+      console.log(`正在获取 ${context} 的可分配用户列表...`);
+      const users = await jiraClient.listAssignableUsers(
+        options.project,
+        options.issue,
+        parseInt(options.maxResults)
+      );
+
+      if (users.length === 0) {
+        console.log('👥 没有找到可分配的用户');
+        return;
+      }
+
+      console.log(`\n👥 找到 ${users.length} 个可分配的用户\n`);
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('用户名                显示名称                      邮箱');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+      users.forEach(user => {
+        const username = user.name.padEnd(20);
+        const displayName = truncate(user.displayName, 28).padEnd(28);
+        const email = user.emailAddress || 'N/A';
+        const status = user.active ? '' : ' (已禁用)';
+        console.log(`${username} ${displayName} ${email}${status}`);
+      });
+
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log(`\n💡 提示: 使用用户名（第一列）来分配任务，例如: jira issue assign PROJECT-123 -a ${users[0].name}`);
     } catch (error: any) {
       console.error(`错误: ${error.message}`);
       process.exit(1);

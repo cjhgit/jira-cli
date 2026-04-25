@@ -13,6 +13,7 @@ Jira 命令行工具，用于查询和管理 Jira 任务。
 - 指派任务
 - 删除任务
 - 查看项目列表
+- 查看可分配用户列表
 - 支持 TypeScript
 - 命令行友好
 - 支持全局安装
@@ -222,6 +223,22 @@ jira projects
 pnpm run dev projects
 ```
 
+### 查看可分配用户列表
+
+```bash
+# 查看项目中可分配的用户（全局安装）
+jira assignees -p PROJECT
+
+# 查看某个任务可分配的用户
+jira assignees -i PROJECT-123
+
+# 限制最大结果数
+jira assignees -p PROJECT -m 20
+
+# 本地开发
+pnpm run dev assignees -p PROJECT
+```
+
 ## 示例
 
 ### 创建任务
@@ -361,6 +378,17 @@ jira issue search -j "project = PROJECT AND status = 待办"
 ### `jira projects`
 
 列出所有可用的项目。
+
+### `jira assignees`
+
+列出可分配的用户。
+
+选项：
+- `-p, --project <project>` - 项目 Key（可选，与 `-i` 二选一）
+- `-i, --issue <issue>` - 任务 Key（可选，与 `-p` 二选一）
+- `-m, --max-results <number>` - 最大结果数（可选，默认：50）
+
+注意：必须指定项目 Key 或任务 Key 其中之一。
 
 ## 开发
 

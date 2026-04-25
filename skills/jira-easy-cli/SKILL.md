@@ -1,11 +1,11 @@
 ---
 name: jira-easy-cli
-description: Use when managing Jira issues from the terminal - creating, querying, listing, searching, updating status, commenting, assigning, or deleting tasks via CLI. Also use when installing or configuring the jira-easy-cli npm package.
+description: Use when managing Jira issues from the terminal - creating, querying, listing, searching, updating status, commenting, assigning, or deleting tasks via CLI. Also use when listing assignable users for projects or issues. Also use when installing or configuring the jira-easy-cli npm package.
 ---
 
 # Jira Easy CLI
 
-命令行 Jira 任务管理工具，支持创建、查询、搜索、状态更新、评论、指派和删除任务。
+命令行 Jira 任务管理工具，支持创建、查询、搜索、状态更新、评论、指派和删除任务，以及查询可分配用户列表。
 
 ## 安装
 
@@ -70,6 +70,7 @@ export JIRA_BASE_URL=https://your-jira-domain.com
 | `jira issue assign <key>` | `-a` 用户名 | — | 指派任务 |
 | `jira issue delete <key>` | — | `-y` 跳过确认 | 删除任务 |
 | `jira projects` | — | — | 列出所有项目 |
+| `jira assignees` | `-p` 项目 或 `-i` 任务 | `-m` 最大结果(默认50) | 列出可分配的用户 |
 
 ## 常用示例
 
@@ -97,6 +98,10 @@ jira issue add-comment PROJ-123 -c "已修复，请验证"
 
 # 指派任务
 jira issue assign PROJ-123 -a username
+
+# 查看可分配的用户（先查询，再指派）
+jira assignees -p PROJ
+jira assignees -i PROJ-123
 
 # 删除任务（跳过确认）
 jira issue delete PROJ-123 -y

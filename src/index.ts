@@ -686,6 +686,53 @@ issueCommand
     }
   });
 
+issueCommand
+  .command('download-attachment <issueKey>')
+  .description('下载任务的附件')
+  .requiredOption('-a, --attachment <attachmentId>', '附件 ID 或文件名')
+  .option('-o, --output <path>', '输出路径（默认为当前目录）')
+  .action(async (issueKey: string, options) => {
+    try {
+      const config = getJiraConfig();
+      const jiraClient = new JiraClient(config);
+
+      // 如果没有指定输出路径，使用附件的原始文件名
+      let outputPath = options.output;
+      
+      if (!outputPath) {
+        // 获取附件信息来确定文件名
+        const issue = await jiraClient.getIssue(issueKey);
+        
+        if (!issue.fields.attachment || issue.fields.attachment.length === 0) {
+          console.error(`错误: 任务 ${issueKey} 没有附件`);
+          process.exit(1);
+        }
+        
+        const attachment = issue.fields.attachment.find(
+          a => a.id === options.attachment || a.filename === options.attachment
+        );
+        
+        if (!attachment) {
+          console.error(`错误: 找不到附件 "${options.attachment}"`);
+          console.log('\n可用的附件:');
+          issue.fields.attachment.forEach(a => {
+            console.log(`  - ${a.filename} (ID: ${a.id})`);
+          });
+          process.exit(1);
+        }
+        
+        outputPath = join(process.cwd(), attachment.filename);
+      }
+
+      console.log(`正在下载附件...`);
+      await jiraClient.downloadAttachment(issueKey, options.attachment, outputPath);
+      console.log(`✅ 附件已下载到: ${outputPath}`);
+    } catch (error: any) {
+      console.error(`错误: ${error.message}`);
+      process.exit(1);
+    }
+  });
+
 const configCommand = program
   .command('config')
   .description('管理配置');

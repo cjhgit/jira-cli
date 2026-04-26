@@ -1,11 +1,11 @@
 ---
 name: jira-easy-cli
-description: Use when managing Jira issues from the terminal - creating, querying, listing, searching, updating, commenting, assigning, deleting, managing sprints, setting parent-child relationships, adding flags, or editing tasks via CLI. Also use when listing assignable users or projects. Also use when installing or configuring the jira-easy-cli npm package.
+description: Use when managing Jira issues from the terminal - creating, querying, listing, searching, updating, commenting, assigning, deleting, downloading attachments, managing sprints, setting parent-child relationships, adding flags, or editing tasks via CLI. Also use when listing assignable users or projects. Also use when installing or configuring the jira-easy-cli npm package.
 ---
 
 # Jira Easy CLI
 
-功能强大的命令行 Jira 任务管理工具，支持创建、查询、搜索、更新、评论、指派、删除任务，管理 Sprint，设置父子任务关系，添加标识等完整功能。
+功能强大的命令行 Jira 任务管理工具，支持创建、查询、搜索、更新、评论、指派、删除任务，下载附件，管理 Sprint，设置父子任务关系，添加标识等完整功能。
 
 ## 安装
 
@@ -124,6 +124,12 @@ export JIRA_BASE_URL=https://your-jira-domain.com
 |------|---------|---------|------|
 | `jira issue add-flag <key>` | — | `-m` 原因说明 | 添加标识 🚩 |
 | `jira issue remove-flag <key>` | — | — | 移除标识 |
+
+### 附件管理
+
+| 命令 | 必填参数 | 可选参数 | 说明 |
+|------|---------|---------|------|
+| `jira issue download-attachment <key>` | `-a` 附件ID或文件名 | `-o` 输出路径 | 下载任务附件 |
 
 ### 项目和用户
 
@@ -249,6 +255,25 @@ jira issue add-flag PROJ-123 -m "等待外部依赖"
 jira issue remove-flag PROJ-123
 ```
 
+### 附件下载
+
+```bash
+# 先查看任务的附件信息（包含附件 ID 和文件名）
+jira issue view PROJ-123
+
+# 使用附件 ID 下载（文件会保存到当前目录）
+jira issue download-attachment PROJ-123 -a 12345
+
+# 使用文件名下载
+jira issue download-attachment PROJ-123 -a "screenshot.png"
+
+# 指定输出路径
+jira issue download-attachment PROJ-123 -a 12345 -o ~/Downloads/file.png
+
+# 指定输出目录（会使用原始文件名）
+jira issue download-attachment PROJ-123 -a "report.pdf" -o ~/Documents/
+```
+
 ### 查询信息
 
 ```bash
@@ -283,3 +308,5 @@ jira assignees -i PROJ-123
 - 父子任务转换会改变任务 Key，但内容完整保留
 - 标识功能通过 `FLAGGED` 标签实现，兼容所有 Jira 实例
 - 可以组合多个筛选条件，如 `--current-sprint -a username -s "In Progress"`
+- 下载附件时可以使用附件 ID 或完整文件名，先用 `jira issue view` 查看附件列表
+- 下载附件支持流式传输，适合下载大文件，内存占用低

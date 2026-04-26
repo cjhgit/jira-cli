@@ -18,6 +18,7 @@ Jira 命令行工具，用于查询和管理 Jira 任务。
 - 将子任务变成独立任务
 - 给任务添加标识（flag）
 - 移除任务的标识（flag）
+- 下载任务附件
 - 查看项目列表
 - 查看可分配用户列表
 - 配置管理（通过命令设置账号信息）
@@ -399,6 +400,29 @@ jira issue remove-flag PROJECT-123
 pnpm run dev issue remove-flag PROJECT-123
 ```
 
+### 下载任务附件
+
+下载任务的附件到本地。
+
+```bash
+# 使用附件 ID 下载（全局安装）
+jira issue download-attachment PROJECT-123 -a 12345
+
+# 使用文件名下载
+jira issue download-attachment PROJECT-123 -a "screenshot.png"
+
+# 指定输出路径
+jira issue download-attachment PROJECT-123 -a 12345 -o /path/to/output/file.png
+
+# 本地开发
+pnpm run dev issue download-attachment PROJECT-123 -a 12345
+```
+
+说明：
+- 如果不指定输出路径（`-o`），文件会下载到当前目录，使用原始文件名
+- 可以使用附件 ID 或完整的文件名来指定要下载的附件
+- 使用 `jira issue view PROJECT-123` 可以查看任务的所有附件及其 ID
+
 ### 查看项目列表
 
 ```bash
@@ -687,6 +711,15 @@ jira issue search -j "project = PROJECT AND status = 待办"
 
 参数：
 - `<issueKey>` - 任务 Key（必需），例如：PROJECT-123
+
+### `jira issue download-attachment <issueKey>`
+
+下载任务的附件到本地。
+
+参数：
+- `<issueKey>` - 任务 Key（必需），例如：PROJECT-123
+- `-a, --attachment <attachmentId>` - 附件 ID 或文件名（必需）
+- `-o, --output <path>` - 输出路径（可选，默认为当前目录使用原始文件名）
 
 ### `jira projects`
 

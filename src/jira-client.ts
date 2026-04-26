@@ -1,4 +1,6 @@
 import axios, { AxiosInstance } from 'axios';
+import { createWriteStream, existsSync, mkdirSync } from 'fs';
+import { dirname } from 'path';
 import { 
   JiraConfig, 
   JiraIssue, 
@@ -869,6 +871,63 @@ export class JiraClient {
         throw new Error('无法连接到 Jira 服务器');
       } else {
         throw new Error(`请求失败: ${error.message}`);
+      }
+    }
+  }
+
+  async downloadAttachment(issueKey: string, attachmentId: string, outputPath: string): Promise<void> {
+    try {
+      // 获取任务信息以找到附件
+      const issue = await this.getIssue(issueKey);
+      
+      if (!issue.fields.attachment || issue.fields.attachment.length === 0) {
+        throw new Error(`任务 ${issueKey} 没有附件`);
+      }
+      
+      // 查找指定的附件
+      const attachment = issue.fields.attachment.find(a => a.id === attachmentId || a.filename === attachmentId);
+      
+      if (!attachment) {
+        const availableAttachments = issue.fields.attachment
+          .map(a => `  - ${a.filename} (ID: ${a.id})`)
+          .join('\n');
+        throw new Error(
+          `找不到附件 "${attachmentId}"\n\n可用的附件:\n${availableAttachments}`
+        );
+      }
+      
+      // 下载附件
+      const response = await axios.get(attachment.content, {
+        auth: {
+          username: this.config.accountInfo.account,
+          password: this.config.accountInfo.password,
+        },
+        responseType: 'stream',
+      });
+      
+      // 确保输出目录存在
+      const outputDir = dirname(outputPath);
+      if (!existsSync(outputDir)) {
+        mkdirSync(outputDir, { recursive: true });
+      }
+      
+      // 将数据写入文件
+      const writer = createWriteStream(outputPath);
+      response.data.pipe(writer);
+      
+      return new Promise((resolve, reject) => {
+        writer.on('finish', resolve);
+        writer.on('error', reject);
+      });
+    } catch (error: any) {
+      if (error.response) {
+        throw new Error(
+          `Jira API 错误: ${error.response.status} - ${error.response.statusText}`
+        );
+      } else if (error.request) {
+        throw new Error('无法连接到 Jira 服务器');
+      } else {
+        throw error;
       }
     }
   }

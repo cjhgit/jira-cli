@@ -142,6 +142,7 @@ issueCommand
   .option('-a, --assignee <assignee>', '指派人')
   .option('-l, --labels <labels>', '标签（逗号分隔）')
   .option('--parent <parent>', '父任务 Key（用于创建子任务）')
+  .option('-i, --images <images>', '图片文件路径（逗号分隔，将自动上传并插入到描述中）')
   .option('--no-sprint', '不自动添加到当前活动的 Sprint')
   .action(async (options) => {
     try {
@@ -171,6 +172,40 @@ issueCommand
         console.log(`   父任务: ${options.parent}`);
       }
       console.log(`   链接: ${config.serviceInfo.baseUrl}/browse/${result.key}`);
+
+      // 如果指定了图片，上传并更新描述
+      if (options.images) {
+        console.log('\n正在上传图片...');
+        const imagePaths = options.images.split(',').map((p: string) => p.trim());
+        const uploadedImages: string[] = [];
+
+        for (const imagePath of imagePaths) {
+          try {
+            const attachment = await jiraClient.uploadAttachment(result.key, imagePath);
+            console.log(`   ✓ 已上传: ${attachment.filename}`);
+            uploadedImages.push(attachment.filename);
+          } catch (error: any) {
+            console.error(`   ✗ 上传失败 ${imagePath}: ${error.message}`);
+          }
+        }
+
+        // 如果成功上传了图片，更新描述以包含图片引用
+        if (uploadedImages.length > 0) {
+          let newDescription = options.description || '';
+          
+          // 在描述末尾添加图片引用
+          if (newDescription) {
+            newDescription += '\n\n';
+          }
+          
+          uploadedImages.forEach(filename => {
+            newDescription += `!${filename}!\n`;
+          });
+
+          await jiraClient.updateDescription(result.key, newDescription);
+          console.log(`\n✅ 已在描述中插入 ${uploadedImages.length} 张图片`);
+        }
+      }
 
       // 自动添加到当前活动的 Sprint（除非指定了 --no-sprint）
       // commander.js 将 --no-sprint 转换为 options.sprint = false

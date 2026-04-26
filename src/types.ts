@@ -140,6 +140,7 @@ export interface CreateIssueOptions {
   assignee?: string;
   labels?: string;
   parent?: string;
+  attachments?: string[];
 }
 
 export interface CreateIssueResponse {

@@ -19,6 +19,7 @@ Jira 命令行工具，用于查询和管理 Jira 任务。
 - 给任务添加标识（flag）
 - 移除任务的标识（flag）
 - 下载任务附件
+- 上传图片到任务（创建任务时）
 - 查看项目列表
 - 查看可分配用户列表
 - 配置管理（通过命令设置账号信息）
@@ -161,6 +162,12 @@ jira issue create -p PROJECT -s "新任务" -l "frontend,urgent"
 
 # 创建指定类型的任务
 jira issue create -p PROJECT -s "Bug修复" -t Bug
+
+# 创建任务并上传图片（图片会自动插入到描述中）
+jira issue create -p PROJECT -s "UI设计稿" -d "设计稿如下" -i screenshot.png
+
+# 创建任务并上传多张图片（使用逗号分隔）
+jira issue create -p PROJECT -s "Bug报告" -d "发现以下问题" -i bug1.png,bug2.png,log.txt
 
 # 本地开发方式
 pnpm run dev issue create -p PROJECT -s "任务标题"
@@ -582,6 +589,7 @@ jira issue search -j "project = PROJECT AND status = 待办"
 - `-a, --assignee <assignee>` - 指派人（可选）
 - `-l, --labels <labels>` - 标签，逗号分隔（可选）
 - `--parent <parent>` - 父任务 Key，用于创建子任务（可选）
+- `-i, --images <images>` - 图片文件路径，逗号分隔，将自动上传并插入到描述中（可选）
 - `--no-sprint` - 不自动添加到当前活动的 Sprint，任务保留在 Backlog（可选）
 
 ### `jira issue list`

@@ -1,6 +1,7 @@
 import axios, { AxiosInstance } from 'axios';
-import { createWriteStream, existsSync, mkdirSync } from 'fs';
-import { dirname } from 'path';
+import { createWriteStream, createReadStream, existsSync, mkdirSync, statSync } from 'fs';
+import { dirname, basename } from 'path';
+import FormData from 'form-data';
 import { 
   JiraConfig, 
   JiraIssue, 
@@ -919,6 +920,57 @@ export class JiraClient {
         writer.on('finish', resolve);
         writer.on('error', reject);
       });
+    } catch (error: any) {
+      if (error.response) {
+        throw new Error(
+          `Jira API 错误: ${error.response.status} - ${error.response.statusText}`
+        );
+      } else if (error.request) {
+        throw new Error('无法连接到 Jira 服务器');
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  async uploadAttachment(issueKey: string, filePath: string): Promise<{ id: string; filename: string }> {
+    try {
+      // 检查文件是否存在
+      if (!existsSync(filePath)) {
+        throw new Error(`文件不存在: ${filePath}`);
+      }
+
+      // 创建 FormData
+      const form = new FormData();
+      form.append('file', createReadStream(filePath), {
+        filename: basename(filePath),
+        contentType: 'application/octet-stream',
+      });
+
+      // 上传附件
+      const response = await axios.post(
+        `${this.config.serviceInfo.baseUrl}/rest/api/2/issue/${issueKey}/attachments`,
+        form,
+        {
+          auth: {
+            username: this.config.accountInfo.account,
+            password: this.config.accountInfo.password,
+          },
+          headers: {
+            'X-Atlassian-Token': 'no-check',
+            ...form.getHeaders(),
+          },
+        }
+      );
+
+      if (response.data && response.data.length > 0) {
+        return {
+          id: response.data[0].id,
+          filename: response.data[0].filename,
+        };
+      }
+
+      throw new Error('上传附件失败：服务器未返回附件信息');
     } catch (error: any) {
       if (error.response) {
         throw new Error(

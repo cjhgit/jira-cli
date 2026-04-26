@@ -1,11 +1,11 @@
 ---
 name: jira-easy-cli
-description: Use when managing Jira issues from the terminal - creating, querying, listing, searching, updating, commenting, assigning, deleting, downloading attachments, managing sprints, setting parent-child relationships, adding flags, or editing tasks via CLI. Also use when listing assignable users or projects. Also use when installing or configuring the jira-easy-cli npm package.
+description: Use when managing Jira issues from the terminal - creating, querying, listing, searching, updating, commenting, assigning, deleting, uploading images, downloading attachments, managing sprints, setting parent-child relationships, adding flags, or editing tasks via CLI. Also use when listing assignable users or projects. Also use when installing or configuring the jira-easy-cli npm package.
 ---
 
 # Jira Easy CLI
 
-功能强大的命令行 Jira 任务管理工具，支持创建、查询、搜索、更新、评论、指派、删除任务，下载附件，管理 Sprint，设置父子任务关系，添加标识等完整功能。
+功能强大的命令行 Jira 任务管理工具，支持创建、查询、搜索、更新、评论、指派、删除任务，上传图片，下载附件，管理 Sprint，设置父子任务关系，添加标识等完整功能。
 
 ## 安装
 
@@ -82,7 +82,7 @@ export JIRA_BASE_URL=https://your-jira-domain.com
 | 命令 | 必填参数 | 可选参数 | 说明 |
 |------|---------|---------|------|
 | `jira issue view <key>` | 任务 Key | — | 查看任务详情 |
-| `jira issue create` | `-p` 项目, `-s` 标题 | `-d` 描述, `-t` 类型(默认Task), `--priority`, `-a` 指派人, `-l` 标签, `--parent` 父任务, `--no-sprint` | 创建任务或子任务 |
+| `jira issue create` | `-p` 项目, `-s` 标题 | `-d` 描述, `-t` 类型(默认Task), `--priority`, `-a` 指派人, `-l` 标签, `--parent` 父任务, `-i` 图片路径(逗号分隔), `--no-sprint` | 创建任务或子任务 |
 | `jira issue list` | `-p` 项目 | `-s` 状态, `-a` 指派人, `-r` 报告人, `--parent` 父任务, `--current-sprint`, `--all`, `-l` 数量(默认50) | 列出任务 |
 | `jira issue search` | `-j` JQL | `-m` 最大结果(默认50) | JQL 搜索 |
 | `jira issue delete <key>` | — | `-y` 跳过确认 | 删除任务 |
@@ -173,6 +173,12 @@ jira issue create -p PROJ -s "修复登录bug" -d "用户无法登录" -t Bug --
 
 # 创建任务但不加入 Sprint（保留在 Backlog）
 jira issue create -p PROJ -s "需求调研" --no-sprint
+
+# 创建任务并上传图片（图片会自动插入到描述中）
+jira issue create -p PROJ -s "UI设计稿" -d "设计稿如下" -i screenshot.png
+
+# 创建任务并上传多张图片
+jira issue create -p PROJ -s "Bug报告" -d "发现以下问题" -i bug1.png,bug2.png
 
 # 创建子任务
 jira issue create -p PROJ -s "编写测试用例" --parent PROJ-123 -t Sub-task
@@ -303,6 +309,7 @@ jira assignees -i PROJ-123
 ## 提示与技巧
 
 - 创建任务时默认会自动加入当前 Sprint，使用 `--no-sprint` 保留在 Backlog
+- 创建任务时使用 `-i` 参数可以上传图片，会自动插入到描述中，支持多张图片（逗号分隔）
 - 查看任务的子任务用 `--parent` 参数
 - 只查看当前 Sprint 任务用 `--current-sprint` 参数
 - 父子任务转换会改变任务 Key，但内容完整保留
@@ -310,3 +317,4 @@ jira assignees -i PROJ-123
 - 可以组合多个筛选条件，如 `--current-sprint -a username -s "In Progress"`
 - 下载附件时可以使用附件 ID 或完整文件名，先用 `jira issue view` 查看附件列表
 - 下载附件支持流式传输，适合下载大文件，内存占用低
+- 上传的图片会使用 Jira 语法 `!filename!` 自动插入到描述中

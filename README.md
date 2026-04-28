@@ -2,6 +2,9 @@
 
 Jira 命令行工具，用于查询和管理 Jira 任务。
 
+> 本工具**内置了可供 AI/Agent 调用的 skill**（`skills/jira-easy-cli`），便于在自动化场景中快速获得“该用什么命令、参数怎么写、常见流程是什么”等上下文。
+> 你可以用 `jira skills-path` 打印 skill 的绝对路径，方便在本地/CI/Agent 环境中定位与读取。
+
 ## 功能特点
 
 - 创建 Jira 任务
@@ -129,6 +132,9 @@ jira issue --help
 jira issue view --help
 jira issue create --help
 jira issue search --help
+
+# 查看内置 skills 目录路径
+jira skills-path
 ```
 
 ### 查看任务详情
@@ -733,6 +739,10 @@ jira issue search -j "project = PROJECT AND status = 待办"
 
 列出所有可用的项目。
 
+### `jira skills-path`
+
+打印内置 `skills/jira-easy-cli` 目录的绝对路径（用于定位本项目内置的 skill 文档/内容）。
+
 ### `jira assignees`
 
 列出可分配的用户。
@@ -750,6 +760,7 @@ jira issue search -j "project = PROJECT AND status = 待办"
 - `src/index.ts` - 主入口文件，命令行接口
 - `src/jira-client.ts` - Jira API 客户端
 - `src/types.ts` - TypeScript 类型定义
+- `skills/jira-easy-cli/` - 内置 skill 文档与说明（可用 `jira skills-path` 定位）
 
 ### 本地开发
 

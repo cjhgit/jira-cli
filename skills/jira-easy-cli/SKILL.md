@@ -138,6 +138,12 @@ export JIRA_BASE_URL=https://your-jira-domain.com
 | `jira projects` | — | — | 列出所有项目 |
 | `jira assignees` | `-p` 项目 或 `-i` 任务 | `-m` 最大结果(默认50) | 列出可分配的用户 |
 
+### Skills
+
+| 命令 | 必填参数 | 可选参数 | 说明 |
+|------|---------|---------|------|
+| `jira skills-path` | — | — | 打印内置 `skills/jira-easy-cli` 目录的绝对路径 |
+
 ### 配置管理
 
 | 命令 | 必填参数 | 可选参数 | 说明 |

@@ -110,6 +110,14 @@ program
   .description('Jira 任务管理命令行工具')
   .version(getVersion());
 
+program
+  .command('skills-path')
+  .description('打印内置 skills/jira-easy-cli 目录路径')
+  .action(() => {
+    const skillsPath = join(__dirname, '../skills/jira-easy-cli');
+    console.log(skillsPath);
+  });
+
 const issueCommand = program
   .command('issue')
   .description('管理 Jira 任务');
